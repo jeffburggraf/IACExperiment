@@ -1,0 +1,141 @@
+from pathlib import Path
+import numpy as np
+import re
+from matplotlib import pyplot as plt
+from datetime import datetime
+from scipy.stats import norm
+
+
+class MPA:
+    def __init__(self, path):
+        with open(path) as f:
+            lines = f.readlines()
+        header = lines[:lines.index("[DATA0,8192 ]\n")]
+        adc_headers = []
+        try:
+            for i in range(6):
+                start_i = header.index(f"[ADC{i+1}]\n")
+                end_s = f"[ADC{i+2}]\n"
+                if end_s not in header:
+                    adc_headers.append(header[start_i+1:])
+                else:
+                    end_i = header.index(end_s)
+                    adc_headers.append(header[start_i+1: end_i])
+        except ValueError:
+            pass
+        adc_headers_dict = {}
+        for index, head in enumerate(adc_headers):
+            index += 1
+            d = {}
+            for s in head:
+                try:
+                    k, v = s.split('=')
+                    v = v.rstrip().lstrip()
+                    try:
+                        v = float(v)
+                    except ValueError:
+                        pass
+                    d[k] = v
+
+                except ValueError:
+                    pass
+            adc_headers_dict[index] = d
+
+        counts = [[] for _ in range(len(adc_headers_dict))]
+
+        index = 0
+        for line in lines[len(header)+1:]:
+            if re.match("\[DATA[0-9],", line):
+                print(line)
+                index += 1
+            else:
+                counts[index].append(int(line))
+        self._counts = counts
+
+        channels = [np.arange(0, adc_dict['range']) + 0.5 for adc_dict in adc_headers_dict.values()]
+
+        channels_bins = [np.arange(0, adc_dict['range']+1) for adc_dict in adc_headers_dict.values()]
+
+        self._erg_coeffs = np.array([[adc_dict['caloff'], adc_dict['calfact']] for adc_dict in adc_headers_dict.values()])
+
+        self._energies = [np.sum([c*channels[adc_i]**pow for pow, c in enumerate(self._erg_coeffs[adc_i])], axis=0)
+                          for adc_i in range(len(channels))]
+        self._erg_bins = [np.sum([c*channels_bins[adc_i]**pow for pow, c in enumerate(self._erg_coeffs[adc_i])], axis=0)
+                          for adc_i in range(len(channels))]
+
+        self._live_times = [adc_dict['realtime'] for adc_dict in adc_headers_dict.values()]
+        self._real_times = [adc_dict['runtime'] for adc_dict in adc_headers_dict.values()]
+
+        for line in header:
+            if m := re.match("REPORT-FILE from (.+) written", line):
+                s = m.groups()[0].strip()
+                self.system_start_time = datetime.strptime(s, "%m/%d/%Y %H:%M:%S")
+                break
+
+    def channel2erg(self, ch, adc=1):
+        # todo: Is this right? is there a "zero" channel? Compare to MPANT.
+        return self.energies(adc)[int(ch)]
+
+    def live_time(self, adc=1):
+        return self._live_times[adc-1]
+
+    def real_time(self, adc=1):
+        return self._real_times[adc-1]
+
+    def counts(self, adc=1):
+        return self._counts[adc-1]
+
+    def energies(self, adc=1):
+        return self._energies[adc-1]
+
+    def erg_bins(self, adc=1):
+        return self._erg_bins[adc-1]
+
+    def plot_spectrum(self, adc=1, ax=None, leg_name=None):
+        if ax is None:
+            plt.figure()
+            ax = plt.gca()
+
+        ax.errorbar(self.energies(adc), self.counts(adc), np.sqrt(self.counts(adc)), label=leg_name)
+        if leg_name:
+            ax.legend()
+
+
+class MPANTList:
+    def __init__(self, path):
+        path = Path(path)
+        self._energies = []
+        self._times = []
+        mpa_path = path.with_suffix(".mpa")
+        self.mca = MPA(mpa_path)
+        with open(path) as f:
+            while f:
+                line = f.readline()
+                if not line:
+                    break
+                adc, ch, time = map(int, line.split())
+                time = time*5E-8
+                energy = self.mca.channel2erg(ch, adc)
+                try:
+                    self._energies[adc].append(energy)
+                    self._times[adc].append(time)
+                except IndexError:
+                    self._energies.append([energy])
+                    self._times.append([time])
+
+    def times(self, adc=1):
+        return self._times[adc-1]
+
+    def energies(self, adc=1):
+        return self._energies[adc-1]
+
+    def plot_count_rate(self, adc=1):
+        # todo
+        pass
+
+
+
+# m = MPA('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.mpa')
+l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
+# m.plot_spectrum()
+# plt.show()

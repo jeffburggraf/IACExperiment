@@ -4,16 +4,21 @@ import numpy as np
 from JSB_tools.list_reader import MaestroListFile
 from matplotlib import pyplot as plt
 from typing import Union
+from mpant_reader import MPANTList
 
 
 list_file_dir = Path.cwd()/'exp_data'/'list_files'
 
 
-def get_ortec_beam_time(l: MaestroListFile):
-    beam_on_times = l.realtimes[np.where(l.sample_ready_state == 1)]
-    beam_on_center_time = np.median(beam_on_times)
-    beam_duration = 2 * np.percentile(beam_on_times - beam_on_center_time, 98)
-    return beam_on_center_time, beam_duration
+def get_ortec_beam_time(l: Union[MaestroListFile, MPANTList]):
+    if isinstance(l, MaestroListFile):
+        beam_on_times = l.realtimes[np.where(l.sample_ready_state == 1)]
+        beam_on_center_time = np.median(beam_on_times)
+        beam_duration = 2 * np.percentile(beam_on_times - beam_on_center_time, 98)
+        return beam_on_center_time, beam_duration
+    else:
+        raise NotImplementedError
+
 
 class IACShot:
     save_path = Path.cwd()/'exp_data'/'packaged_shots'
@@ -22,7 +27,7 @@ class IACShot:
     def load(cls, name, new_name=None):
         pass
 
-    def __init__(self, list_file: Union[MaestroListFile], efficiency_function, new_name=None):
+    def __init__(self, list_file: Union[MaestroListFile, MPANTList], efficiency_function, new_name=None):
         if new_name is None:
             new_name = list_file.file_name
 
@@ -45,7 +50,8 @@ class IACShot:
         print(len(list_file.percent_live), len(list_file.times))
 
 #          todo: interpolate percent live time
-#           Add class for MPANT
+#           Add class for MPANT List file
+
 
 
 
