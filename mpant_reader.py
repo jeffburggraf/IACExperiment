@@ -46,7 +46,6 @@ class MPA:
         index = 0
         for line in lines[len(header)+1:]:
             if re.match("\[DATA[0-9],", line):
-                print(line)
                 index += 1
             else:
                 counts[index].append(int(line))
@@ -102,8 +101,11 @@ class MPA:
 
 
 class MPANTList:
+    # Todo: Maybe deadtime is simply tot_time-a*n_events? Test this.
+
     def __init__(self, path):
         path = Path(path)
+        self.file_name = path.name
         self._energies = []
         self._times = []
         mpa_path = path.with_suffix(".mpa")
@@ -113,15 +115,20 @@ class MPANTList:
                 line = f.readline()
                 if not line:
                     break
-                adc, ch, time = map(int, line.split())
+                adc_index, ch, time = map(int, line.split())
+                adc = adc_index + 1
                 time = time*5E-8
                 energy = self.mca.channel2erg(ch, adc)
                 try:
-                    self._energies[adc].append(energy)
-                    self._times[adc].append(time)
+                    self._energies[adc_index].append(energy)
+                    self._times[adc_index].append(time)
                 except IndexError:
-                    self._energies.append([energy])
-                    self._times.append([time])
+                    try:
+                        self._energies.insert(adc_index, [energy])
+                        self._times.insert(adc_index, [time])
+                    except IndexError:
+                        self._energies.append([energy])
+                        self._times.append([time])
 
     def times(self, adc=1):
         return self._times[adc-1]
@@ -134,8 +141,7 @@ class MPANTList:
         pass
 
 
+if __name__ == '__main__':
+    l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
+    print(l.energies(1))
 
-# m = MPA('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.mpa')
-l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
-# m.plot_spectrum()
-# plt.show()
