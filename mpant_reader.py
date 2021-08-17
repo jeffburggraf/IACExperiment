@@ -39,7 +39,8 @@ class MPA:
 
                 except ValueError:
                     pass
-            adc_headers_dict[index] = d
+            if d['active']:
+                adc_headers_dict[index] = d
 
         counts = [[] for _ in range(len(adc_headers_dict))]
 
@@ -87,8 +88,12 @@ class MPA:
     def energies(self, adc=1):
         return self._energies[adc-1]
 
-    def erg_bins(self, adc=1):
+    def get_erg_bins(self, adc=1):
         return self._erg_bins[adc-1]
+
+    @property
+    def erg_bins(self):
+        return self.get_erg_bins(adc=1)
 
     def plot_spectrum(self, adc=1, ax=None, leg_name=None):
         if ax is None:
@@ -108,7 +113,11 @@ class MPANTList:
         self.file_name = path.name
         self._energies = []
         self._times = []
-        mpa_path = path.with_suffix(".mpa")
+        try:
+            mpa_path = path.with_suffix(".mpa")
+        except FileNotFoundError:
+            assert False, f"MPA file corresponding to {path.name} not found!"
+
         self.mca = MPA(mpa_path)
         with open(path) as f:
             while f:
@@ -130,11 +139,35 @@ class MPANTList:
                         self._energies.append([energy])
                         self._times.append([time])
 
-    def times(self, adc=1):
-        return self._times[adc-1]
+    def erg_bin_index(self, erg, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0"
+        return np.searchsorted(self.mca.get_erg_bins(adc=adc), erg, side='right') - 1
 
-    def energies(self, adc=1):
-        return self._energies[adc-1]
+    def get_times(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0"
+        return np.array(self._times[adc-1])
+
+    @property
+    def times(self):
+        return self.get_times(adc=1)
+
+    def get_energies(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0"
+        return np.array(self._energies[adc-1])
+
+    @property
+    def energies(self):
+        return self.get_energies(adc=1)
+
+    def get_erg_bins(self, adc=1):
+        return self.mca.get_erg_bins(adc=adc)
+
+    @property
+    def erg_bins(self):
+        return self.get_erg_bins(adc=1)
+
+    def dead_time_corr(self, t, adc=1):
+        return 1  # todo
 
     def plot_count_rate(self, adc=1):
         # todo
@@ -142,6 +175,8 @@ class MPANTList:
 
 
 if __name__ == '__main__':
-    l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
-    print(l.energies(1))
+    # l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
+    # print(l.energies())
+    bins = [1,2,3,5,6,7]
+    print(np.searchsorted(bins, 3, side="right")-1)
 
