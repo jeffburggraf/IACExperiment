@@ -1,3 +1,4 @@
+import pickle
 from pathlib import Path
 import ROOT
 from JSB_tools import ROOT_loop, TBrowser
@@ -8,7 +9,9 @@ from typing import Union
 from mpant_reader import MPANTList
 import dill
 import marshal
-
+from eff_calibration_setup import top_level_data_path
+from lmfit.model import ModelResult
+from JSB_tools import ProgressReport
 
 list_file_dir = Path.cwd()/'exp_data'/'list_files'
 
@@ -90,7 +93,7 @@ class IACShot:
                     out._list_of_data[np.searchsorted(out.erg_bins, erg, side='right')-1].append(t_bg)
             if index%10000 == 0:
                 print(index, erg)
-        out.eff_function = lambda x: 1
+        out.eff_fit = lambda x: 1
         out.event_energies = meas_ergs
         out.event_times = meas_times
         out.beam_center_time = 0
@@ -123,19 +126,24 @@ class IACShot:
         self.tree.Branch("eff", br_eff, 'eff/F')
         self.tree.Branch('dead_corr', br_dead_corr, 'dead_corr/F')
 
+        eff_list = self.eff_fit.eval(x=self.event_energies)
+
+        prog = ProgressReport(len(self.event_energies))
+
         for i in range(len(self.event_energies)):
             erg = self.event_energies[i]
             time = self.event_times[i] - self.beam_center_time
 
-            eff = self.eff_function(erg)
+            eff = eff_list[i]
             br_energy[0] = erg
             br_time[0] = time
             br_eff[0] = eff
             self.tree.Fill()
+            prog.log(i)
 
         self.tree.Write()
 
-    def __init__(self, list_file: Union[MaestroListFile, MPANTList], eff_function, new_name=None):
+    def __init__(self, list_file: Union[MaestroListFile, MPANTList], eff_fit: ModelResult, new_name=None):
 
         if new_name is None:
             new_name = list_file.file_name
@@ -145,8 +153,8 @@ class IACShot:
         if not root_path.parent.exists():
             root_path.parent.mkdir()
 
-        assert hasattr(eff_function, '__call__')
-        self.eff_function = eff_function
+        assert isinstance(eff_fit, ModelResult)
+        self.eff_fit = eff_fit
 
         self.beam_center_time, self.beam_duration, self.beam_abs_times = get_beam_time(list_file)
         self.tree = None
@@ -168,7 +176,7 @@ class IACShot:
 
     def pickle(self, pickle_path, marshal_path):
         with open(pickle_path, 'wb') as f:  # pickle things that are not computationally intensive
-            pickle_data = {'beam_abs_times': self.beam_abs_times, 'eff_function': self.eff_function}
+            pickle_data = {'beam_abs_times': self.beam_abs_times, 'eff_fit': self.eff_fit}
             dill.dump(pickle_data, f)
 
         with open(marshal_path, 'wb') as f:
@@ -182,7 +190,7 @@ class IACShot:
         with open(pickle_path, 'rb') as f:
             pickle_data = dill.load(f)
             self.beam_abs_times = pickle_data['beam_abs_times']
-            self.eff_function = pickle_data['eff_function']
+            self.eff_fit = pickle_data['eff_fit']
 
         with open(marshal_path, 'rb') as f:
             self._list_of_data = marshal.load(f)
@@ -191,22 +199,45 @@ class IACShot:
         IACShot.root_files.append(root_file)
         self.tree = root_file.Get('tree')
 
+    def __repr__(self):
+        assert False
+
+
+def load_efficiency(rel_data_dir_path) -> ModelResult:
+    """
+    Load efficiency from cal_data/rel_data_dir_path.
+    Saved efficiencies are always named "cal.pickle", so just get `rel_data_dir_path` right.
+    Args:
+        rel_data_dir_path:
+
+    Returns:
+
+    """
+    path = top_level_data_path/rel_data_dir_path/'cal.pickle'
+    with open(path, 'rb') as f:
+        fit: ModelResult = pickle.load(f)
+    return fit
+
 
 if __name__ == '__main__':
     #       todo: interpolate percent live time.
     from JSB_tools import Nuclide
-    n = Nuclide.from_symbol('Na22')
-    for g in n.decay_gamma_lines:
-        print(g)
+    load_efficiency('our_det/08_17')
+
     # shot = IACShot.gen_fake_data()
     # shot = IACShot.load('fake')
     # list_file = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt")
-    # list_file2 = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/BeamGunSimulation.Lis")
-    # shot = IACShot(list_file2, lambda x:x)
+    list_file2 = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/cal_data/our_det/08_17/test_beam.Lis")
+    # list_file2.plot_count_rate()
+    # plt.figure()
+    # plt.plot(list_file2.realtimes, list_file2.percent_live)
+    shot = IACShot(list_file2, load_efficiency('our_det/08_17'))
+    # print(shot.beam_abs_times)
 
-    #
+
+    plt.show()
     # tb = ROOT.TBrowser()
-
+    #
     # ROOT_loop()
-
+#
 
