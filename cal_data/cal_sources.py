@@ -59,7 +59,6 @@ class CalSource:
 
 
 CalSource("Y88", serial_num=190607000, activity=433, ref_date=datetime(2019, 7, 1), unit='kBq')
-# CalSource("Y88", serial_num=190607000, activity=370, ref_date=datetime(2019, 7, 1), unit='kBq')
 CalSource("Na22", serial_num=129742, activity=1.146, ref_date=datetime(2008, 7, 1), unit='uCi')
 CalSource("Cs137", serial_num=129792, activity=92.11, ref_date=datetime(2008, 7, 1), unit='nCi')
 CalSource("Cd109", serial_num=129757, activity=10.40, ref_date=datetime(2008, 7, 1), unit='uCi')

@@ -1,10 +1,9 @@
 import numpy as np
+from JSB_tools.spe_reader import SPEFile
+from matplotlib import pyplot as plt
 
-a = np.arange(5)
-def get_bin(x):
 
-    return np.searchsorted(a, x, side="right") - 1
+s = SPEFile('/Users/burggraf1/PycharmProjects/IACExperiment/cal_data/our_det/08_17/Eu-152-0.Spe')
 
-print(a)
-
-print(get_bin(4))
+s.get_spectrum_hist().plot()
+plt.show()
