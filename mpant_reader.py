@@ -4,7 +4,8 @@ import re
 from matplotlib import pyplot as plt
 from datetime import datetime
 from scipy.stats import norm
-
+from functools import cached_property
+from JSB_tools import mpl_hist
 
 class MPA:
     def __init__(self, path):
@@ -166,17 +167,52 @@ class MPANTList:
     def erg_bins(self):
         return self.get_erg_bins(adc=1)
 
+    @cached_property
+    def erg_centers(self):
+        return np.array([(b0 + b1) / 2 for b0, b1 in zip(self.erg_bins[:-1], self.erg_bins[1:])])
+
     def dead_time_corr(self, t, adc=1):
         return 1  # todo
 
-    def plot_count_rate(self, adc=1):
+    def plot_count_rate(self, adc=None, bins=None):
+        if bins is not None:
+            raise NotImplementedError("Impliment numpy histogram stuff")
+        else:
+            bins = 'auto'
+        if adc is None:
+            fig, axs = plt.subplots(2, 1, sharex='all')
+
+            _times = np.concatenate(self._times)
+        else:
+            _times = np.concatenate(self._times[adc])
+            axs = [plt.gca()]
+        data_array = [self.get_times(adc)] if adc is not None else self._times
+
+        for index, (times, ax) in enumerate(zip(data_array, axs)):
+            y, bin_edges = np.histogram(times, bins)
+            bin_widths = bin_edges[1:] - bin_edges[:-1]
+            yerr = np.sqrt(bin_widths)
+
+            y = y / bin_widths
+            yerr /= bin_widths
+            mpl_hist(bin_edges, y, np.sqrt(y), ax=ax, label=f'ADC {index+1}')
+            ax.legend()
+            ax.set_ylabel("count rate [Hz]")
+            if index == 0:
+                ax.set_title("MPANT count rates")
+            else:
+                ax.set_xlabel("Time [s]")
+
+        plt.subplots_adjust(hspace=0)
+
+
+
+
         # todo
         pass
 
 
 if __name__ == '__main__':
-    # l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
-    # print(l.energies())
-    bins = [1,2,3,5,6,7]
-    print(np.searchsorted(bins, 3, side="right")-1)
-
+    l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
+    l.plot_count_rate()
+    plt.show()

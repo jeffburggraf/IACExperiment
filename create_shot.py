@@ -1,36 +1,38 @@
+from __future__ import annotations
 import pickle
 from pathlib import Path
 import ROOT
-from JSB_tools import ROOT_loop, TBrowser
+import pylab as p
+
+from JSB_tools import ROOT_loop, TBrowser, mpl_hist
 import numpy as np
 from JSB_tools.list_reader import MaestroListFile
 from matplotlib import pyplot as plt
-from typing import Union
+from typing import Union, List
 from mpant_reader import MPANTList
 import dill
 import marshal
 from eff_calibration_setup import top_level_data_path
 from lmfit.model import ModelResult
 from JSB_tools import ProgressReport
-
+from functools import cached_property
+from uncertainties import unumpy as unp
+from uncertainties import ufloat
 list_file_dir = Path.cwd()/'exp_data'/'list_files'
 
+import matplotlib
+matplotlib.use('TkAgg')
 
-def get_beam_time(l: Union[MaestroListFile, MPANTList]):
-    if isinstance(l, MaestroListFile):
-        beam_abs_times = l.realtimes[np.where(l.sample_ready_state == 1)]
-    elif isinstance(l, MPANTList):
-        beam_abs_times = l.get_times(adc=2)
-    else:
-        assert False
 
-    beam_on_center_time = np.median(beam_abs_times)
-    beam_duration = 2 * np.percentile(beam_abs_times - beam_on_center_time, 98)
-    return beam_on_center_time, beam_duration, beam_abs_times
 
 
 class IACShot:
     """
+    Nicely package up a IAC shot.
+
+    To re-tool this for PHELIX, just change the get_beam_times function, and allow for both list file arguments
+        to be maestro.
+
     Attributes:
         _list_of_data: 2D list of energies and times. Shape: (# erg channels, number of events in channel [varies]))
     """
@@ -108,6 +110,19 @@ class IACShot:
         return out
 
     @staticmethod
+    def get_beam_times(list_file_maestro: MaestroListFile, list_file_mpant: MPANTList):
+        beam_abs_times_maestro = list_file_maestro.realtimes[np.where(list_file_maestro.sample_ready_state == 1)]
+        beam_abs_times_mpant = list_file_mpant.get_times(adc=2)
+
+        beam_on_center_time_maestro = np.median(beam_abs_times_maestro)
+        beam_on_center_time_mpant = np.median(beam_abs_times_mpant)
+        beam_duration_maestro = 2 * np.percentile(beam_abs_times_maestro - beam_on_center_time_maestro, 98)
+        beam_duration_mpant = 2 * np.percentile(beam_abs_times_mpant - beam_on_center_time_mpant, 98)
+        return (beam_on_center_time_maestro, beam_on_center_time_mpant), \
+               (beam_duration_maestro, beam_duration_mpant), \
+               (beam_abs_times_maestro, beam_abs_times_mpant)
+
+    @staticmethod
     def __get_paths__(name):
         root_path = (IACShot.save_path / name).with_suffix(".root")
         pickle_path = (IACShot.save_path / name).with_suffix(".pickle")
@@ -120,93 +135,276 @@ class IACShot:
         br_eff = np.array([0.], dtype=np.float32)
         br_dead_corr = np.array([0.], dtype=np.float32)
 
-        self.tree = ROOT.TTree('tree', 'tree')
-        self.tree.Branch("t", br_time, 't/F')
-        self.tree.Branch("erg", br_energy, 'erg/F')
-        self.tree.Branch("eff", br_eff, 'eff/F')
-        self.tree.Branch('dead_corr', br_dead_corr, 'dead_corr/F')
+        self.trees = ROOT.TTree('tree1', 'tree1'), ROOT.TTree('tree2', 'tree2')
 
-        eff_list = self.eff_fit.eval(x=self.event_energies)
+        self.trees[0].Branch("t", br_time, 't/F')
+        self.trees[0].Branch("erg", br_energy, 'erg/F')
+        self.trees[0].Branch("eff", br_eff, 'eff/F')
+        self.trees[0].Branch('dead_corr', br_dead_corr, 'dead_corr/F')
 
-        prog = ProgressReport(len(self.event_energies))
+        self.trees[1].Branch("t", br_time, 't/F')
+        self.trees[1].Branch("erg", br_energy, 'erg/F')
+        self.trees[1].Branch("eff", br_eff, 'eff/F')
+        self.trees[1].Branch('dead_corr', br_dead_corr, 'dead_corr/F')
 
-        for i in range(len(self.event_energies)):
-            erg = self.event_energies[i]
-            time = self.event_times[i] - self.beam_center_time
+        eff_lists = [self.eff_fits[i].eval(x=self.event_energies[i]) for i in range(2)]
 
-            eff = eff_list[i]
-            br_energy[0] = erg
-            br_time[0] = time
-            br_eff[0] = eff
-            self.tree.Fill()
-            prog.log(i)
+        prog = ProgressReport(len(self.event_energies[0])+len(self.event_energies[1]))
+        prog_index = 0
+        
+        for det_index in range(2):
+            for evt_index in range(len(self.event_energies[det_index])):
+                erg = self.event_energies[det_index][evt_index]
+                time = self.event_times[det_index][evt_index] - self.beam_center_times[det_index]
+                eff = eff_lists[det_index][evt_index]
 
-        self.tree.Write()
+                br_energy[0] = erg
+                br_time[0] = time
+                br_eff[0] = eff
 
-    def __init__(self, list_file: Union[MaestroListFile, MPANTList], eff_fit: ModelResult, new_name=None):
+                self.trees[det_index].Fill()
 
-        if new_name is None:
-            new_name = list_file.file_name
+                prog_index += 1
+                prog.log(prog_index)
+
+        [tree.Write() for tree in self.trees]
+
+    def __init__(self, list_file_maestro: MaestroListFile, list_file_mpant: MPANTList,
+                 eff_fit_maestro: ModelResult, eff_fit_mpant: ModelResult, new_name):
+        """
+
+        Args:
+            list_file_maestro: Listfile class from LLNL detector
+            list_file_mpant: Listfile class from IAC detector
+            eff_fit_maestro: Corresponding efficiency for LLNL detector
+            eff_fit_mpant: See eff_fit_maestro
+        """
 
         root_path, pickle_path, marshal_path = self.__get_paths__(new_name)
 
         if not root_path.parent.exists():
             root_path.parent.mkdir()
 
-        assert isinstance(eff_fit, ModelResult)
-        self.eff_fit = eff_fit
+        assert isinstance(eff_fit_maestro, ModelResult)
+        assert isinstance(eff_fit_mpant, ModelResult)
+        self.eff_fits: List[ModelResult] = [eff_fit_maestro, eff_fit_mpant]
 
-        self.beam_center_time, self.beam_duration, self.beam_abs_times = get_beam_time(list_file)
-        self.tree = None
+        self.beam_center_times, self.beam_durations, self.beam_abs_times =\
+            IACShot.get_beam_times(list_file_maestro, list_file_mpant)
+        self.trees = None
 
-        self._list_of_data = []
-
-        self.event_times = list_file.times
-        self.event_energies = list_file.energies
-
-        [self._list_of_data.append([]) for i in range(len(list_file.erg_bins) - 1)]  # append MT list 4 each erg ch
-        for erg, time in zip(self.event_energies, self.event_times):  # fill self._list_of_data
-            i = list_file.erg_bin_index(erg)
-            self._list_of_data[i].append(time)
+        self.erg_centers = [list_file_maestro.erg_centers, list_file_mpant.erg_centers]
+        self.erg_bins = [list_file_maestro.erg_bins, list_file_mpant.erg_bins]
+        self.event_times = [list_file_maestro.times, list_file_mpant.times]
+        self.event_energies = [list_file_maestro.energies, list_file_mpant.energies]
 
         self.pickle(pickle_path, marshal_path)
         root_file = ROOT.TFile(str(root_path), 'recreate')
         IACShot.root_files.append(root_file)
         self._build_tree()
 
+    @cached_property
+    def integrated_spectra(self):
+        return [np.array([len(evts) for evts in det_list]) for det_list in self._list_of_data]
+
+    @cached_property
+    def _list_of_data(self):
+        _list_of_data = [[], []]
+
+        # append MT list corresponding to each channel (for both detectors)
+        [_list_of_data[0].append([]) for _ in range(len(self.erg_centers[0]))]
+        [_list_of_data[1].append([]) for _ in range(len(self.erg_centers[1]))]
+
+        for det_index in range(2):
+            for erg, time in zip(self.event_energies[det_index], self.event_times[det_index]):
+                channel_index = self.erg_bin_index(erg, det_index)
+                _list_of_data[det_index][channel_index].append(time)
+        return _list_of_data
+
     def pickle(self, pickle_path, marshal_path):
-        with open(pickle_path, 'wb') as f:  # pickle things that are not computationally intensive
-            pickle_data = {'beam_abs_times': self.beam_abs_times, 'eff_fit': self.eff_fit}
+        with open(pickle_path, 'wb') as f:  # pickle things that cannot be marshal'd
+            pickle_data = {'eff_fits': self.eff_fits}
             dill.dump(pickle_data, f)
 
         with open(marshal_path, 'wb') as f:
-            marshal.dump(self._list_of_data, f)
+            d = {'event_energies': [np.array(l, dtype=np.float64) for l in self.event_energies],
+                  'event_times': [np.array(l, dtype=np.float64) for l in self.event_times],
+                  'beam_abs_times': [np.array(l, dtype=np.float64) for l in self.beam_abs_times],
+                  'erg_centers': [np.array(l, dtype=np.float64) for l in self.erg_centers],
+                  'erg_bins': [np.array(l, dtype=np.float64) for l in self.erg_bins]}
+
+            marshal.dump(d, f)
 
     @classmethod
-    def load(cls, name):
+    def load(cls, name) -> IACShot:
         self = cls.__new__(cls)
         root_path, pickle_path, marshal_path = self.__get_paths__(name)
 
         with open(pickle_path, 'rb') as f:
             pickle_data = dill.load(f)
-            self.beam_abs_times = pickle_data['beam_abs_times']
-            self.eff_fit = pickle_data['eff_fit']
+            self.eff_fits = pickle_data['eff_fits']
 
         with open(marshal_path, 'rb') as f:
-            self._list_of_data = marshal.load(f)
+            marshal_data = marshal.load(f)
+            for k, v in marshal_data.items():
+                setattr(self, k, [np.frombuffer(b, dtype=np.float64) for b in v])
 
         root_file = ROOT.TFile(str(root_path))
         IACShot.root_files.append(root_file)
-        self.tree = root_file.Get('tree')
+        self.trees = root_file.Get('tree1'), root_file.Get('tree2')
+        return self
 
     def __repr__(self):
         assert False
+
+    def erg_bin_index(self, erg, det_index):
+        return np.searchsorted(self.erg_bins[det_index], erg, side='right') - 1
+
+    def eval_efficiency(self, erg, det_index, return_ufloat=False):
+        fit = self.eff_fits[det_index]
+
+        if not hasattr(erg, '__iter__'):
+            out = fit.eval(x=[erg])
+            err = fit.eval_uncertainty(x=[erg])
+            if return_ufloat:
+                return ufloat(out[0], err[0])
+        else:
+            out = fit.eval(x=erg)
+            err = fit.eval_uncertainty(x=erg)
+            if return_ufloat:
+                return unp.uarray(out, err)
+
+    def plot_integrated_spectra(self, eff_correct=True, use_one_ax=None, erg_range=None):
+        if erg_range is None:
+            erg_range = min([self.erg_bins[0][0], self.erg_bins[1][0]]),\
+                        max([self.erg_bins[0][-1], self.erg_bins[1][-1]])
+        if use_one_ax is None:
+            fig, axs = plt.subplots(2, 1, sharex="all", figsize=(9, 9*9/16))
+            axs = axs.flatten()
+        else:
+            if not isinstance(use_one_ax, type(plt.gca())):
+                plt.figure()
+                use_one_ax = plt
+            axs = [use_one_ax]*2
+        labels = ['Upstream', 'downstream']
+        for i, ax in enumerate(axs):
+            ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+            result = unp.uarray(self.integrated_spectra[i], np.sqrt(self.integrated_spectra[i]))
+            min_i, max_i = np.searchsorted(self.erg_centers[i], erg_range, side='right')
+            if min_i == max_i:
+                continue
+            result = result[min_i: max_i]
+            if eff_correct:
+                eff = self.eval_efficiency(self.erg_centers[i][min_i: max_i], i, True)
+                result = result/eff
+            y = unp.nominal_values(result)
+            yerr = unp.std_devs(result)
+            mpl_hist(self.erg_bins[i][min_i: max_i+1], y, yerr, ax=ax, label=labels[i])
+            ax.legend()
+
+        if not use_one_ax:
+            plt.subplots_adjust(hspace=0.16)
+            return axs
+        else:
+            return use_one_ax
+
+    def time_dependence_over_range(self, min_erg, max_erg, det_index, time_bin_edges, eff_correct=True,
+                                  ):
+        """
+        Returns eff. corrected time dependence in a energy range.
+        Args:
+            erg: Todo
+            det_index: Upstream or downstream detector? (0 or 1)
+            bins: Just like np.histogram
+            account4eff: Correct for efficiency?
+            return_ufloat: Calc. error?
+
+        Returns:
+
+        """
+        time_bin_edges = np.array(time_bin_edges)
+        bin_widths = time_bin_edges[1:] - time_bin_edges[:-1]
+        min_channel = self.erg_bin_index(min_erg, det_index)
+        max_channel = self.erg_bin_index(max_erg, det_index)
+        weights = np.zeros(len(time_bin_edges)-1)
+        sum_w2 = np.zeros_like(weights)
+        weights_errors = np.zeros_like(weights)
+        for ch_index in range(min_channel, min([max_channel+1, len(self._list_of_data[det_index])])):
+            times = self._list_of_data[det_index][ch_index]
+            times = np.array(list(filter(lambda x: time_bin_edges[0] <= x < time_bin_edges[-1], times)))
+            if not len(times):
+                continue
+            time_is = np.searchsorted(time_bin_edges, times, side='right') - 1
+            if eff_correct:
+                eff = self.eval_efficiency(self.erg_centers[det_index][ch_index], det_index, True)
+                weights[time_is] += 1/eff.n
+                sum_w2[time_is] += 1/eff.n**2
+                weights_errors[time_is] += eff.n
+            else:
+                weights[time_is] += 1
+        weights = unp.uarray(weights, np.sqrt(sum_w2))
+        weights += unp.uarray(np.zeros_like(weights_errors), weights_errors)
+        print(bin_widths)
+        weights /= bin_widths  # counts -> Hz
+
+        return weights
+
+    def plot_time_dependence(self, min_erg=None, max_erg=None, num_time_bins=None, eff_correct=True):
+        """
+
+        Args:
+            min_erg:
+            max_erg:
+            num_time_bins: If None, auto.
+
+        Returns:
+
+        """
+        if min_erg is None:
+            min_erg = min([self.erg_centers[0][0], self.erg_centers[1][0]])
+        if max_erg is None:
+            max_erg = max([self.erg_centers[0][-1], self.erg_centers[1][-1]])
+        assert max_erg >= min_erg
+        fig, axs = plt.subplots(2, 2, figsize=(9, 9 * 9 / 16))
+        gs = axs[-1][-1].get_gridspec()
+        for ax in axs[:, -1]:
+            ax.remove()
+        erg_axs = fig.add_subplot(gs[:, -1])
+        # print(axs[1,0].remove())
+        time_axs = axs[:, 0]
+
+        labels = ['Upstream', 'downstream']
+        erg_axs.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+        erg_window_width = max_erg-min_erg
+        ax = self.plot_integrated_spectra(use_one_ax=erg_axs, erg_range=[min_erg-erg_window_width, max_erg+erg_window_width],
+                                          eff_correct=eff_correct)
+
+        ax.fill_between([min_erg, max_erg], [ax.get_ylim()[0]] * 2, [ax.get_ylim()[1]] * 2, alpha=0.4, color='red',
+                        label='energy window')
+        ax.legend()
+        axs = axs.flatten()
+        if num_time_bins is None:
+            time_bins = np.histogram_bin_edges(np.concatenate(self.event_times))
+        else:
+            raise NotImplementedError("Make more better")
+
+        for i, ax in enumerate(time_axs):
+            y = self.time_dependence_over_range(min_erg, max_erg, i, time_bins,
+                                                eff_correct=eff_correct)
+            yerr = unp.std_devs(y)
+            y = unp.nominal_values(y)
+            mpl_hist(time_bins, y, yerr, ax=ax, label=labels[i])
+            ax.set_xlabel("Time since beam fire [s]")
+            ax.set_ylabel("Counts/s [Hz]")
+
 
 
 def load_efficiency(rel_data_dir_path) -> ModelResult:
     """
     Load efficiency from cal_data/rel_data_dir_path.
     Saved efficiencies are always named "cal.pickle", so just get `rel_data_dir_path` right.
+    See eff_cal.py for creating efficiency fits.
+
     Args:
         rel_data_dir_path:
 
@@ -220,24 +418,32 @@ def load_efficiency(rel_data_dir_path) -> ModelResult:
 
 
 if __name__ == '__main__':
-    #       todo: interpolate percent live time.
-    from JSB_tools import Nuclide
-    load_efficiency('our_det/08_17')
+    #       todo:
+    #        - Make a way to split Maestro and MPANT list files for multiple shots in short succession
+    #        -
+    #
+    #
+    #        interpolate percent live time.
+    # with open('delete.marshal', 'wb') as f:
+    #     d = {'a': [[1,2,3,4,5], [1,2.]], 'b':[[],[],[],[],[],[]]}
+    #     marshal.dump(d, f)
+    # with open('delete.marshal', 'rb') as f:
+    #     print(marshal.load(f))
+    # from JSB_tools import Nuclide
 
-    # shot = IACShot.gen_fake_data()
-    # shot = IACShot.load('fake')
-    # list_file = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt")
-    list_file2 = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/cal_data/our_det/08_17/test_beam.Lis")
-    # list_file2.plot_count_rate()
-    # plt.figure()
-    # plt.plot(list_file2.realtimes, list_file2.percent_live)
-    shot = IACShot(list_file2, load_efficiency('our_det/08_17'))
-    # print(shot.beam_abs_times)
-
-
+    list_file_mpant = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt")
+    # list_file_maestro = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/test_beam.Lis")
+    # list_file_maestro.plot_count_rate()
+    # shot = IACShot(list_file_maestro, list_file_mpant, load_efficiency('our_det/08_17'), load_efficiency('our_det/08_17'),
+    #                'test')
+    shot = IACShot.load('test')
+    plt.figure()
+    # shot.plot_integrated_spectra(eff_correct=False, use_one_ax=plt.gca(), erg_range=[1000, 1500])
+    with plt.xkcd():
+        shot.plot_time_dependence()
     plt.show()
     # tb = ROOT.TBrowser()
-    #
+
     # ROOT_loop()
 #
 
