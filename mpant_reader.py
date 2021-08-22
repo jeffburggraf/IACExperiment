@@ -6,6 +6,10 @@ from datetime import datetime
 from scipy.stats import norm
 from functools import cached_property
 from JSB_tools import mpl_hist
+from uncertainties.core import AffineScalarFunc
+from uncertainties import unumpy as unp
+from typing import List
+
 
 class MPA:
     def __init__(self, path):
@@ -51,7 +55,8 @@ class MPA:
                 index += 1
             else:
                 counts[index].append(int(line))
-        self._counts = counts
+
+        self._counts = [unp.uarray(c, np.sqrt(c)) for c in counts]
 
         channels = [np.arange(0, adc_dict['range']) + 0.5 for adc_dict in adc_headers_dict.values()]
 
@@ -75,51 +80,101 @@ class MPA:
 
     def channel2erg(self, ch, adc=1):
         # todo: Is this right? is there a "zero" channel? Compare to MPANT.
-        return self.energies(adc)[int(ch)]
+        return self.get_energies(adc)[int(ch)]
 
-    def live_time(self, adc=1):
+    @property
+    def livetime(self):
+        return self.get_livetime()
+
+    def get_livetime(self, adc=1):
         return self._live_times[adc-1]
 
-    def real_time(self, adc=1):
+    @property
+    def realtime(self):
+        return self.get_realtime()
+
+    def get_realtime(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0."
         return self._real_times[adc-1]
 
+    @property
     def counts(self, adc=1):
+        return self.get_counts(adc)
+
+    def get_counts(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0."
         return self._counts[adc-1]
 
+    @property
     def energies(self, adc=1):
-        return self._energies[adc-1]
+        return self.get_energies(adc)
 
-    def get_erg_bins(self, adc=1):
-        return self._erg_bins[adc-1]
+    def get_energies(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0."
+        return self._energies[adc - 1]
 
     @property
     def erg_bins(self):
         return self.get_erg_bins(adc=1)
+
+    def get_erg_bins(self, adc=1):
+        assert adc > 0 , "ADC starts at 1, not 0."
+        return self._erg_bins[adc-1]
+
+    def erg_bin_index(self, erg):
+        if hasattr(erg, '__iter__'):
+            return np.array([self.erg_bin_index(e) for e in erg])
+        if isinstance(erg, AffineScalarFunc):
+            erg = erg.n
+        return np.searchsorted(self.erg_bins, erg, side='right') - 1
+
+    @property
+    def erg_bin_widths(self):
+        return self.get_erg_bin_widths(adc=1)
+
+    def get_erg_bin_widths(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0."
+        return self._erg_bins[adc-1][1:] - self._erg_bins[adc-1][1:]
 
     def plot_spectrum(self, adc=1, ax=None, leg_name=None):
         if ax is None:
             plt.figure()
             ax = plt.gca()
 
-        ax.errorbar(self.energies(adc), self.counts(adc), np.sqrt(self.counts(adc)), label=leg_name)
+        ax.errorbar(self.get_energies(adc), self.get_counts(adc), np.sqrt(self.get_counts(adc)), label=leg_name)
         if leg_name:
             ax.legend()
 
 
 class MPANTList:
-    # Todo: Maybe deadtime is simply tot_time-a*n_events? Test this.
+    def __init__(self, path, manual_mpa_path=None, dead_time_corr_window=20):
+        """
 
-    def __init__(self, path):
+        Args:
+            path:
+            manual_mpa_path:
+            dead_time_corr_window: The width of convolution window for calculating % live time
+        """
         path = Path(path)
         self.file_name = path.name
         self._energies = []
         self._times = []
-        try:
-            mpa_path = path.with_suffix(".mpa")
-        except FileNotFoundError:
-            assert False, f"MPA file corresponding to {path.name} not found!"
+        self._livetimes = []
 
-        self.mca = MPA(mpa_path)
+        mpa_path = path.with_suffix(".mpa")
+
+        if manual_mpa_path is None:
+            try:
+                self.mca = MPA(mpa_path)
+            except FileNotFoundError:
+                assert False, "Corresponding MPA file not found (used for erg calibration info, etc.). " \
+                              "Use `manual_mpa_path` to provide MPA file with correct information. "
+        else:
+            self.mca = MPA(manual_mpa_path)
+
+        prev_times = [0., 0., 0., 0.]
+        tot_live_time = 0
+
         with open(path) as f:
             while f:
                 line = f.readline()
@@ -129,16 +184,43 @@ class MPANTList:
                 adc = adc_index + 1
                 time = time*5E-8
                 energy = self.mca.channel2erg(ch, adc)
+                tot_live_time += time - prev_times[adc_index] - 1.25E-5
+                prev_times[adc_index] = time
                 try:
                     self._energies[adc_index].append(energy)
                     self._times[adc_index].append(time)
+                    self._livetimes[adc_index].append(tot_live_time)
                 except IndexError:
-                    try:
-                        self._energies.insert(adc_index, [energy])
-                        self._times.insert(adc_index, [time])
-                    except IndexError:
-                        self._energies.append([energy])
-                        self._times.append([time])
+                    for i in range(len(self._times), adc_index + 1):
+                        self._energies.append([])
+                        self._times.append([])
+                        self._livetimes.append([])
+                    self._energies[adc_index].append(energy)
+                    self._times[adc_index].append(time)
+                    self._livetimes[adc_index].append(tot_live_time)
+
+        self._percent_live: List[np.ndarray] = [np.ndarray([0]) for i in range(len(self._livetimes))]
+
+        for adc_index in range(len(self._livetimes)):
+            if not len(self._livetimes[adc_index]):
+                continue
+
+            kernel = np.ones(dead_time_corr_window//2)/(dead_time_corr_window//2)
+            self._percent_live[adc_index] = \
+                np.gradient(self._livetimes[adc_index]) / np.gradient(self._realtimes[adc_index])
+            self._percent_live[adc_index] = np.convolve(self._percent_live[adc_index], kernel, mode='same')
+
+            # correct edge effects
+            self._percent_live[adc_index][0:dead_time_corr_window//2] = \
+                np.median(self._percent_live[adc_index][dead_time_corr_window//2:dead_time_corr_window])
+            # print(self._percent_live[adc_index][:20])
+
+            self._percent_live[adc_index][-dead_time_corr_window//2:] = \
+                np.median(self._percent_live[adc_index][-dead_time_corr_window: -dead_time_corr_window//2])
+
+    @property
+    def _realtimes(self):
+        return self._times
 
     def erg_bin_index(self, erg, adc=1):
         assert adc > 0, "ADC starts at 1, not 0"
@@ -164,6 +246,22 @@ class MPANTList:
         return self.mca.get_erg_bins(adc=adc)
 
     @property
+    def percent_live(self):
+        return self.get_percent_live(adc=1)
+
+    def get_percent_live(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0"
+        return self._percent_live[adc-1]
+
+    @property
+    def livetimes(self):
+        return self.get_livetimes(adc=1)
+
+    def get_livetimes(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0"
+        return self._livetimes[adc - 1]
+
+    @property
     def erg_bins(self):
         return self.get_erg_bins(adc=1)
 
@@ -171,14 +269,19 @@ class MPANTList:
     def erg_centers(self):
         return np.array([(b0 + b1) / 2 for b0, b1 in zip(self.erg_bins[:-1], self.erg_bins[1:])])
 
-    def dead_time_corr(self, t, adc=1):
-        return 1  # todo
+    @property
+    def deadtime_corrs(self):
+        return self.get_deadtime_corrs(adc=1)
+
+    def get_deadtime_corrs(self, adc=1):
+        assert adc > 0, "ADC starts at 1, not 0"
+        a = self.get_percent_live(adc)
+        return 1.0 / a
 
     def plot_count_rate(self, adc=None, bins=None):
-        if bins is not None:
-            raise NotImplementedError("Impliment numpy histogram stuff")
-        else:
+        if bins is None:
             bins = 'auto'
+
         if adc is None:
             fig, axs = plt.subplots(2, 1, sharex='all')
 
@@ -205,14 +308,20 @@ class MPANTList:
 
         plt.subplots_adjust(hspace=0)
 
-
-
-
-        # todo
-        pass
+    def plot_percent_live(self, adc=1, ax=None, **ax_kwargs):
+        if ax is None:
+            plt.figure()
+            ax = plt.gca()
+        ax.plot(self._realtimes[adc-1], self.get_percent_live(adc), **ax_kwargs)
+        ax.set_xlabel("Real time [s]")
+        ax.set_ylabel("Fraction of time det. is live")
+        return ax
 
 
 if __name__ == '__main__':
-    l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt')
-    l.plot_count_rate()
+    l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/10-100-1k-10k-100k.txt')
+    # l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/100000.txt')
+
+    l.plot_percent_live(adc=2)
+    l.plot_count_rate(bins=100)
     plt.show()

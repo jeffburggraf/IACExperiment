@@ -157,10 +157,12 @@ class IACShot:
                 erg = self.event_energies[det_index][evt_index]
                 time = self.event_times[det_index][evt_index] - self.beam_center_times[det_index]
                 eff = eff_lists[det_index][evt_index]
+                dt_corr = self.dead_time_corrs[det_index][evt_index]
 
                 br_energy[0] = erg
                 br_time[0] = time
                 br_eff[0] = eff
+                br_dead_corr[0] = dt_corr
 
                 self.trees[det_index].Fill()
 
@@ -197,6 +199,7 @@ class IACShot:
         self.erg_bins = [list_file_maestro.erg_bins, list_file_mpant.erg_bins]
         self.event_times = [list_file_maestro.times, list_file_mpant.times]
         self.event_energies = [list_file_maestro.energies, list_file_mpant.energies]
+        self.dead_time_corrs = [list_file_maestro.deadtime_corrs, list_file_mpant.deadtime_corrs]
 
         self.pickle(pickle_path, marshal_path)
         root_file = ROOT.TFile(str(root_path), 'recreate')
@@ -228,10 +231,10 @@ class IACShot:
 
         with open(marshal_path, 'wb') as f:
             d = {'event_energies': [np.array(l, dtype=np.float64) for l in self.event_energies],
-                  'event_times': [np.array(l, dtype=np.float64) for l in self.event_times],
-                  'beam_abs_times': [np.array(l, dtype=np.float64) for l in self.beam_abs_times],
-                  'erg_centers': [np.array(l, dtype=np.float64) for l in self.erg_centers],
-                  'erg_bins': [np.array(l, dtype=np.float64) for l in self.erg_bins]}
+                 'event_times': [np.array(l, dtype=np.float64) for l in self.event_times],
+                 'beam_abs_times': [np.array(l, dtype=np.float64) for l in self.beam_abs_times],
+                 'erg_centers': [np.array(l, dtype=np.float64) for l in self.erg_centers],
+                 'erg_bins': [np.array(l, dtype=np.float64) for l in self.erg_bins]}
 
             marshal.dump(d, f)
 
@@ -356,6 +359,7 @@ class IACShot:
             min_erg:
             max_erg:
             num_time_bins: If None, auto.
+            eff_correct: Whether or not to perform efficiency correction.
 
         Returns:
 
@@ -382,7 +386,6 @@ class IACShot:
         ax.fill_between([min_erg, max_erg], [ax.get_ylim()[0]] * 2, [ax.get_ylim()[1]] * 2, alpha=0.4, color='red',
                         label='energy window')
         ax.legend()
-        axs = axs.flatten()
         if num_time_bins is None:
             time_bins = np.histogram_bin_edges(np.concatenate(self.event_times))
         else:
@@ -431,19 +434,19 @@ if __name__ == '__main__':
     #     print(marshal.load(f))
     # from JSB_tools import Nuclide
 
-    list_file_mpant = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.txt")
-    # list_file_maestro = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/test_beam.Lis")
+    list_file_mpant = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/10000.txt")
+    list_file_maestro = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/test_beam.Lis")
     # list_file_maestro.plot_count_rate()
-    # shot = IACShot(list_file_maestro, list_file_mpant, load_efficiency('our_det/08_17'), load_efficiency('our_det/08_17'),
-    #                'test')
-    shot = IACShot.load('test')
-    plt.figure()
+    shot = IACShot(list_file_maestro, list_file_mpant, load_efficiency('our_det/2021-08-17'), load_efficiency('our_det/2021-08-17'),
+                   'test')
+    # shot = IACShot.load('test')
+    # plt.figure()
     # shot.plot_integrated_spectra(eff_correct=False, use_one_ax=plt.gca(), erg_range=[1000, 1500])
-    with plt.xkcd():
-        shot.plot_time_dependence()
-    plt.show()
-    # tb = ROOT.TBrowser()
+    # with plt.xkcd():
+    #     shot.plot_time_dependence()
+    # plt.show()
+    tb = ROOT.TBrowser()
 
-    # ROOT_loop()
-#
+    ROOT_loop()
+
 
