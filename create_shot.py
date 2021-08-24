@@ -112,7 +112,7 @@ class IACShot:
     @staticmethod
     def get_beam_times(list_file_maestro: MaestroListFile, list_file_mpant: MPANTList):
         beam_abs_times_maestro = list_file_maestro.realtimes[np.where(list_file_maestro.sample_ready_state == 1)]
-        beam_abs_times_mpant = list_file_mpant.get_times(adc=2)
+        beam_abs_times_mpant = list_file_mpant.get_times(adc=list_file_mpant.aux_adc_number)
 
         beam_on_center_time_maestro = np.median(beam_abs_times_maestro)
         beam_on_center_time_mpant = np.median(beam_abs_times_mpant)
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     #     print(marshal.load(f))
     # from JSB_tools import Nuclide
 
-    list_file_mpant = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/10000.txt")
+    list_file_mpant = MPANTList("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/jeff002.txt",primary_adc_number=1, aux_adc_number=3)
     list_file_maestro = MaestroListFile("/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/test_beam.Lis")
     # list_file_maestro.plot_count_rate()
     shot = IACShot(list_file_maestro, list_file_mpant, load_efficiency('our_det/2021-08-17'), load_efficiency('our_det/2021-08-17'),

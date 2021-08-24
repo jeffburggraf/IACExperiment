@@ -45,6 +45,15 @@ class CalSource:
         return self._ref_activity * correction
 
     def get_n_decays(self, duration, start_date=datetime.now()):
+        """
+
+        Args:
+            duration: Acquisition is seconds
+            start_date: For source activity correction.
+
+        Returns:
+
+        """
         dt = (start_date - self.ref_date).total_seconds()
         hl = self.nuclide.half_life
         n_nuclides_ref = self._ref_activity/self.nuclide.decay_rate
@@ -66,3 +75,11 @@ CalSource("Mn54", serial_num="J4-348", activity=9.882, ref_date=datetime(2012, 9
 CalSource("Co57", serial_num="K4-895", activity=1.135, ref_date=datetime(2013, 7, 15), unit='uCi')
 CalSource("Eu152", serial_num="129753", activity=1.060, ref_date=datetime(2008, 1, 7), unit='uCi')
 
+
+if __name__ == '__main__':
+    n = Nuclide.from_symbol("Y88")
+    print(n.decay_modes)
+
+    for g in n.decay_gamma_lines:
+        print(g)
+    print(CalSource.get_source(190607000).get_n_decays(1, ))
