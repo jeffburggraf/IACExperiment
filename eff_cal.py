@@ -12,7 +12,7 @@ import warnings
 from collections import namedtuple
 
 #  =============================================================
-path = "their_det/2021-08-17"
+path = "our_det/2021-08-24"
 reload = True
 debug_print = False
 false_code = False
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         if n.name == 'Y88':
             cal_gammas = n.decay_gamma_lines[:2]
         elif n.name == 'Eu152':
-            cal_gammas = [n.decay_gamma_lines[2], n.decay_gamma_lines[3], n.decay_gamma_lines[7]]
+            cal_gammas = [n.decay_gamma_lines[0], n.decay_gamma_lines[1], n.decay_gamma_lines[7]]
         elif n.name == 'Co57':
             cal_gammas = n.decay_gamma_lines[:1]
         else:

@@ -135,20 +135,21 @@ def save_eff_points(data_dir_name, gamma_func, exclude_source_func=None, debug=F
     assert m, 'Directory needs to be a date in the correct format, e.g. 2021-08-12'
     date_of_cal = datetime(*map(int, m.groups()))
 
-    if maestro_flag:
-        bg_spe = SPEFile(data_path/'BG.Spe')
-    else:
-        bg_spe = MPA(data_path/'BG.mpa')
-
-    back_ground_count_rates = bg_spe.counts / bg_spe.livetime
-    plt.title("Background count rate")
-    plt.plot(bg_spe.energies, unp.nominal_values(back_ground_count_rates))
+    #
+    # if maestro_flag:
+    #     bg_spe = SPEFile(data_path/'BG.Spe')
+    # else:
+    #     bg_spe = MPA(data_path/'BG.mpa')
+    #
+    # back_ground_count_rates = bg_spe.counts / bg_spe.livetime
+    # plt.title("Background count rate")
+    # plt.plot(bg_spe.energies, unp.nominal_values(back_ground_count_rates))
 
     file_matches = []  # files that match SPE
 
     # sort files so that sources are processed together
-    f_matcher = re.compile(r"([A-Z][a-z]?-[0-9]+)-([0-9])\.Spe") if maestro_flag else\
-        re.compile(r"([A-Z][a-z]?-[0-9]+)-([0-9])\.mpa")
+    f_matcher = re.compile(r"([A-Z][a-z]?[0-9]+)-([0-9])\.Spe") if maestro_flag else\
+        re.compile(r"([A-Z][a-z]?[0-9]+)-([0-9])\.mpa")
     for f in sorted(data_path.iterdir()):
         if m := f_matcher.match(f.name):
             file_matches.append((m, f))
@@ -176,8 +177,9 @@ def save_eff_points(data_dir_name, gamma_func, exclude_source_func=None, debug=F
             all_spe_center_files[nuclide.name] = spe
 
         n_decays = cal_source.get_n_decays(spe.livetime, date_of_cal)
-
-        spectrum_array = spe.counts - back_ground_count_rates*spe.livetime
+        # bg subtract
+        # spectrum_array = spe.counts - back_ground_count_rates*spe.livetime
+        spectrum_array = spe.counts
         baseline = SPEFile.calc_background(spectrum_array)
         spectrum_array -= baseline
 
@@ -248,7 +250,7 @@ def save_eff_points(data_dir_name, gamma_func, exclude_source_func=None, debug=F
         axs = axs.flatten()
         for index, (name, _spe) in enumerate(all_spe_center_files.items()):
             ax = axs[index]
-            y = _spe.counts/_spe.livetime - back_ground_count_rates
+            y = _spe.counts/_spe.livetime  #- back_ground_count_rates
             y_err = unp.std_devs(y)
             y = unp.nominal_values(y)
             ax.errorbar(_spe.energies, y, y_err, label=f"{name}")
