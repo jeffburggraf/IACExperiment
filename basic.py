@@ -20,7 +20,7 @@ max_words = None
 t_max = None
 n_overlays = 2
 # shots = [66, 64, 69, 68, 73, 72, 75]
-shots = [104, 105, 106, 107, 109, 108, 112, 113, 115, 114]
+shots = [125, 129, 130, 131, 132, 134]
 figsize = (7, 5) #(10, 10*9/16)
 plot_spectrum = False
 # day = 'wednesday'
@@ -71,7 +71,7 @@ if pulses_path.exists():
 
 
 def get_maestro(num):
-    for day in ["tuesday", 'wednesday', 'thursday']:
+    for day in ["tuesday", 'wednesday', 'thursday', 'friday']:
         list_path = _path / day / f'shot{num}.Lis'
         if list_path.exists():
             try:
@@ -99,7 +99,10 @@ loop_index = 0
 for shot_num in shots:
 
     if labels is not None:
-        description = get_label(shot_num)
+        try:
+            description = get_label(shot_num)
+        except KeyError:
+            description = None
     else:
         description = ''
     try:

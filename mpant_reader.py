@@ -323,22 +323,23 @@ class MPANTList:
         if adc == 'All':
             fig, axs = plt.subplots(2, 1, sharex='all')
             _times = np.concatenate(tuple(self._times.values()))
-            data_array = tuple(self._times.values())
+            adcs, data_array = self._times.keys(), self._times.values()
         else:
             adc = self.__get_adc_index__(adc)
             _times = np.concatenate(self._times[adc])
             axs = [plt.gca()]
             data_array = [self.get_times(adc)]
+            adcs = [adc]
         # data_array = [self.get_times(adc)] if adc is not None else tuple(self._times.values())
 
-        for index, (times, ax) in enumerate(zip(data_array, axs)):
+        for index, (adc, times, ax)in enumerate(zip(adcs, data_array, axs)):
             y, bin_edges = np.histogram(times, bins)
             bin_widths = bin_edges[1:] - bin_edges[:-1]
             yerr = np.sqrt(bin_widths)
 
             y = y / bin_widths
             yerr /= bin_widths
-            mpl_hist(bin_edges, y, np.sqrt(y), ax=ax, label=f'ADC {index+1}')
+            mpl_hist(bin_edges, y, np.sqrt(y), ax=ax, label=f'ADC {adc}')
             ax.legend()
             ax.set_ylabel("count rate [Hz]")
             if index == 0:

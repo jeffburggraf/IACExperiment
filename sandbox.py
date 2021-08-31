@@ -2,28 +2,25 @@
 # from JSB_tools.spe_reader import SPEFile
 # from matplotlib import pyplot as plt
 from openpyxl import load_workbook
+import re
 
-wb = load_workbook(filename = r'/Users/burggraf1/Downloads/IAC Run Spreadsheet (4).xlsx')
-# sheet_ranges = wb[]
+from pathlib import Path
+shots_lis = []
+shots_spe = []
+for p in (Path.cwd()/'exp_data').iterdir():
+    if p.is_dir():
+        if p.name[-3:] == 'day':
+            for f in p.iterdir():
+                if m := re.match("shot([0-9]+)\.Lis", f.name):
+                    shots_lis.append(int(m.groups()[0]))
+                elif m := re.match("shot([0-9]+)\.Spe", f.name):
+                    shots_spe.append(int(m.groups()[0]))
 
-sheet = wb['Sheet1']
-for x in (sheet['A']):
-    print(x.value)
 
+shots_lis = list(sorted(shots_lis))
 
-#
-# from JSB_tools import Nuclide
-# #
-# n = Nuclide.from_symbol('Y88')
-# print(n.decay_daughters)
-# for g in n.decay_gamma_lines:
-#     print(g)
-# # # s = SPEFile('/Users/burggraf1/PycharmProjects/IACExperiment/cal_data/our_det/2021-08-17/Eu-152-0.Spe')
-# #
-# # s.get_spectrum_hist().plot()
-# # plt.show()
-# import pickle
-#
-# with open("/Users/burggraf1/PycharmProjects/IACExperiment/cal_data/our_det/2021-08-17/cal.pickle", 'rb') as f:
-#     d = pickle.load(f)
-# print(d.eval(x=[2]))
+for i in range(141):
+    if i not in shots_lis:
+        print(i)
+
+print(shots_spe)

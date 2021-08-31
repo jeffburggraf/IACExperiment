@@ -43,7 +43,7 @@ for h in sheet['2']:
 
 print(header)
 
-for i in range(3, 120):
+for i in range(3, 210):
     entries = [c.value for c in sheet[f'{i}']]
     info = {}
     for e, h in zip(entries, header):
