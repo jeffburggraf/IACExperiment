@@ -73,6 +73,7 @@ CalSource("Cs137", serial_num=129792, activity=92.11, ref_date=datetime(2008, 7,
 CalSource("Cd109", serial_num=129757, activity=10.40, ref_date=datetime(2008, 7, 1), unit='uCi')
 CalSource("Mn54", serial_num="J4-348", activity=9.882, ref_date=datetime(2012, 9, 1), unit='uCi')
 CalSource("Co57", serial_num="K4-895", activity=1.135, ref_date=datetime(2013, 7, 15), unit='uCi')
+CalSource("Co57", serial_num="K4-896", activity=11.11, ref_date=datetime(2013, 7, 15), unit='uCi')
 CalSource("Eu152", serial_num="129753", activity=1.060, ref_date=datetime(2008, 1, 7), unit='uCi')
 
 
