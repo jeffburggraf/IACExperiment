@@ -20,8 +20,8 @@ from uncertainties import unumpy as unp
 from uncertainties import ufloat
 list_file_dir = Path.cwd()/'exp_data'/'list_files'
 
-import matplotlib
-matplotlib.use('TkAgg')
+# import matplotlib
+# matplotlib.use('TkAgg')
 
 
 

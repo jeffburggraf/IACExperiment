@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 from openpyxl import load_workbook
 #
-wb = load_workbook(filename = Path(__file__).parent/'IAC Run Spreadsheet.xlsx')
+wb = load_workbook(filename=Path(__file__).parent.parent/'exp_data'/'IAC Run Spreadsheet.xlsx')
 sheet = wb['Sheet1']
 
 
@@ -11,6 +11,11 @@ class ShotInfo:
         self.entries_dict = entries_dict
         self.shot_num = self.entries_dict['Run #']
         self.n_pulses = self.entries_dict['# pulses']
+        self.he_flow = entries_dict['He (SLPM)']
+        self.ar_flow = entries_dict['Ar (SLPM)']
+        self.mylar_thickness = entries_dict['Mylar (um)']
+        self.ufoil_pos = entries_dict['#1 pos from upstream']
+
         if self.n_pulses is None:
             self.is_valid = False
         else:
@@ -22,6 +27,11 @@ class ShotInfo:
                 for i in [1, 2]]
         self.flow = flow
         self.entries_dict['flow'] = self.flow
+        self.entries_dict['foil pos'] = self.ufoil_pos
+        if self.entries_dict['Filter temp'] is None:
+            self.entries_dict['Filter temp'] = 'Room'
+        self.is_ln2 = True if self.entries_dict['Filter temp'] == 'LN2' else False
+        # self.
 
 
 all_shots = {}

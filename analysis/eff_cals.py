@@ -94,8 +94,9 @@ if __name__ == '__main__':
     eullnl4 = CalData('wednesday', evening=True, llnl_det=True, nuclide='Eu152')
     eullnl5 = CalData('tuesday', evening=False, llnl_det=True, nuclide='Eu152')
     collnl = CalData('friday', evening=False, llnl_det=True, nuclide='Co57')
-    eu_iac_w_morn = CalData('wednesday', evening=False, llnl_det=False, nuclide='Eu152', position=0)
-    eu_iac_th_morn = CalData('thursday', evening=False, llnl_det=False, nuclide='Eu152', position=0)
+    eu_iac1 = CalData('wednesday', evening=False, llnl_det=False, nuclide='Eu152', position=0)
+    eu_iac2 = CalData('friday', evening=False, llnl_det=False, nuclide='Eu152', position=0)
+    eu_iac3 = CalData('thursday', evening=False, llnl_det=False, nuclide='Eu152', position=0)
 
     ax = eullnl.plot_rate()
     # collnl.plot_rate(ax)
@@ -108,8 +109,8 @@ if __name__ == '__main__':
     cal_points_x = [30]
     cal_points_y = [1E-6]
 
-    for t in [eullnl, eullnl2, eullnl3, eullnl4, eullnl5]:
-        print(t.calc_efficiency())
+    for t in [eullnl, eullnl2, eullnl3, eullnl4, eullnl5, eu_iac1, eu_iac2, eu_iac3]:
+        print(t.label, t.calc_efficiency())
 
     for i in range(1, 6):
         erg, eff = eullnl.calc_efficiency(i)

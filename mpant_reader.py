@@ -163,13 +163,42 @@ class MPA:
         adc = self.__get_adc_index__(adc)
         return self._erg_bins[adc][1:] - self._erg_bins[adc][1:]
 
-    def plot_spectrum(self, adc=None, ax=None, leg_name=None):
+    def get_energies_in_range(self, erg_min, erg_max, adc=None):
+        """
+        Integrate events over energy.
+        Args:
+            erg_min:
+            erg_max:
+            adc:
+
+        Returns:
+
+        """
+        adc = self.__get_adc_index__(adc)
+        return self.get_energies(adc)[np.where((self.get_energies(adc) >= erg_min) & (self.get_energies(adc) <= erg_max))]
+
+    def plot_spectrum(self, adc=None, ax=None, leg_name=None, erg_min=None, erg_max=None,
+                      **mpl_kwargs):
         adc = self.__get_adc_index__(adc)
         if ax is None:
             plt.figure()
             ax = plt.gca()
-
-        ax.errorbar(self.get_energies(adc), self.get_counts(adc, nominal=True), unp.std_devs(self.get_counts(adc)), label=leg_name)
+        if erg_min is not None:
+            min_index = self.erg_bin_index(erg_min)
+        else:
+            min_index = 0
+        if erg_max is not None:
+            max_index = self.erg_bin_index(erg_max)
+        else:
+            max_index = len(self.erg_bins)-1
+        # ax.errorbar(self.get_energies(adc)[min_index: max_index],
+        #             self.get_counts(adc, nominal=True)[min_index: max_index],
+        #             unp.std_devs(self.get_counts(adc))[min_index: max_index],
+        #             label=leg_name)
+        mpl_hist(self.erg_bins[min_index: max_index+1], self.get_counts(adc)[min_index: max_index],
+                 ax=ax, label=leg_name, **mpl_kwargs)
+        ax.set_xlabel('energy [KeV]')
+        ax.set_ylabel('counts')
         if leg_name:
             ax.legend()
 
