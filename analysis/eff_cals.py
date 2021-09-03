@@ -43,7 +43,7 @@ class CalData:
         if llnl_det:
             self.spec = SPEFile(path)
             if cal_spe is not None:
-                self.spec.set_erg_cal(*cal_spe.erg_coefs)
+                self.spec.set_erg_cal(*cal_spe.erg_calibration)
         else:
             self.spec = MPA(path)
         self.counts = self.spec.counts

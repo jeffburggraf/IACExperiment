@@ -1,9 +1,13 @@
 from pathlib import Path
 import re
+
+import matplotlib.pyplot as plt
+
 from JSB_tools.list_reader import MaestroListFile
 
 
-data_dir = Path(__file__).parent/'exp_data'
+# data_dir = Path(__file__).parent/'exp_data'
+data_dir = Path('/Volumes/NO NAME')
 
 
 def get_maesto_list_shot_paths():
@@ -31,8 +35,12 @@ def get_mpant_mca_shot_paths():
     out = {k:v for k, v in sorted(out.items(), key=lambda x: x[0])}
     return out
 
-print(get_mpant_mca_shot_paths())
 if __name__ == '__main__':
-    for path in get_maesto_list_shot_paths().values():
-        m = MaestroListFile(path)
-        m.pickle()
+    p132 = get_maesto_list_shot_paths()[132]
+    l = MaestroListFile(p132)
+    l.SPE.plot_erg_spectrum()
+    plt.show()
+
+    # for path in get_maesto_list_shot_paths().values():
+    #     m = MaestroListFile(path)
+    #     m.pickle()

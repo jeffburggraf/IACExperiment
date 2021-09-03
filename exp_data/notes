@@ -3,6 +3,7 @@
     shots = [45, 46, 40, 41, 51, 52]
 
 - Same is true for foil in the center.
+    shots = [65,66,69,70, 73, 74]
 
 - Comparing PHELIX setup to cold target with pure Argon suggests 20% efficiency
     - shots = [134, 9]

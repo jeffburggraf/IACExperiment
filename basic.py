@@ -5,7 +5,6 @@ from JSB_tools.list_reader import MaestroListFile
 from matplotlib import pyplot as plt
 from mpant_reader import MPA
 from pathlib import Path
-import numpy as np
 from JSB_tools import mpl_hist, calc_background
 from uncertainties import ufloat
 from uncertainties import unumpy as unp
@@ -19,10 +18,11 @@ viable_gammas = {'Xe139': 218.5, 'Mo104': 68.5}
 gamma_Erg = viable_gammas['Xe139']
 window = 4
 max_words = None
-time_bins = (0, None, 4)  # min, max, bin width in seconds
-n_overlays = 3
+time_bins = (0, 300, 4)  # min, max, bin width in seconds
+n_overlays = 6
 # shots = [66, 64, 69, 68, 73, 72, 75]
-shots = range(13, 19)
+# shots = [65,66,69,70, 73, 74]
+shots = [132, 128]
 # shots = [105, 107, 113, 116]
 figsize = (10, 10*9/16)
 plot_spectrum = False
@@ -32,8 +32,7 @@ num_time_bins = 130
 sub_bg = True
 load_from_pickle = True
 plot_integrated = True
-# labels = ['He (SLPM)', 'Ar (SLPM)', 'foil pos', 'Filter temp', 'Mylar (um)', 'flow']
-labels = ['He (SLPM)', 'Ar (SLPM)']
+labels = ['He (SLPM)', 'Ar (SLPM)', 'foil pos', 'Filter temp', 'flow']
 # labels = None
 scale_Ln2 = 1.2*1.5
 #  ====================================================
@@ -51,9 +50,8 @@ for s in bad_shots:
 
 
 def get_rise_an_fall_times(unbinned_times):
-    _weights, bins = np.histogram(unbinned_times, bins=np.arange(min(unbinned_times), max(unbinned_times)+1, 1))
+    _weights, bins = np.histogram(unbinned_times, bins=np.arange(0, max(unbinned_times)+1, 1))
     _times = (bins[1:] + bins[:-1])/2
-    b_width = np.mean(_times[1:] - _times[:-1])
     kernel = np.ones(3)/3
     _weights = np.convolve(_weights, kernel, mode='same')
     rel_errors = np.where(_weights > 0, _weights, 1)
@@ -202,7 +200,7 @@ for loop_index, shot_num in enumerate(shots):
         # plt.fill_between()
 
         bg_values = (bg_values_right + bg_values_left)/2
-        counts_signal = np.array(counts_signal, dtype=np.float)
+        counts_signal = np.array(counts_signal, dtype=float)
         if sub_bg:
             counts_signal -= bg_values
 
@@ -226,7 +224,7 @@ for loop_index, shot_num in enumerate(shots):
         trans_time, hl = get_rise_an_fall_times(times_sig)
 
         if all_shots[shot_num].is_ln2:  # cheat
-            hl = 48
+            hl = 44
 
         try:
             mca = get_mpant(shot_num)
