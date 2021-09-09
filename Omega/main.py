@@ -55,9 +55,9 @@ def shot_metadata() -> Tuple[Dict[str, Any], List[str]]:
     return out, list(labels.values())
 
 
-_shot_metadata, valid_labels = shot_metadata()
-for k, v in _shot_metadata.items():
-    print(k, v)
+# _shot_metadata, valid_labels = shot_metadata()
+# for k, v in _shot_metadata.items():
+#     print(k, v)
 
 
 def get_shotnums_by_label(label):
@@ -201,26 +201,48 @@ class CCD:
     def __init__(self, shot_num):
         self.shot_num = shot_num
         self.data = _load_array(data_dir/f'HRS_CCD-s{shot_num}_hrs_ccd_lower.hdf')
-
-        print()
+        self.roi = None
 
     def plot(self, ax=None):
         if ax is None:
             plt.figure()
             ax = plt.gca()
 
+        data = convolve_gauss(np.sum(self.data[:, self.roi[0]: self.roi[1]], axis=1), 5)
+        w = self.roi[1] - self.roi[0]
+        s = 250
+        # print(np.sum(data))
+        data_bg1 = convolve_gauss(np.sum(self.data[:, self.roi[0]-w-s: self.roi[0]-s], axis=1), 5)
+        data_bg2 = convolve_gauss(np.sum(self.data[:, self.roi[0] + s: self.roi[0] + w + s], axis=1), 5)
+        print(list(map(lambda x: f'{np.sum(x):.2e}', [data_bg1, data_bg2, data])))
+        mpl_hist(np.arange(len(data) + 1), data_bg1, ax=ax, label='bg1')
+        mpl_hist(np.arange(len(data) + 1), data_bg2, ax=ax, label='bg2')
+        mpl_hist(np.arange(len(data) + 1), data, ax=ax, label='sig')
+        ax.legend()
+        return ax
+
+    def _find_line(self, n_sigma=1):
+        a = convolve_gauss(np.sum(c.data, axis=0), 20)
+        max_loc = np.argmax(a)
+        fit = PeakFit(max_loc, np.arange(len(a)), a)
+        self.roi = (max_loc-int(n_sigma*fit.sigma.n), max_loc+int(n_sigma*fit.sigma.n))
+        return self.roi
+
     def imshow(self):
         plt.figure()
         ax = plt.gca()
-        # plt.figure(figsize=(16 / 9 * size, size))
-        X = convolve_gauss2d(self.data, 5)
-        ax.imshow(X, norm=colors.LogNorm(), aspect='auto')
+        self._find_line()
+        ax.imshow(self.data, norm=colors.LogNorm(), aspect='auto')
+        ax.plot([self.roi[0]]*2, ax.get_ylim(), c='black')
+        ax.plot([self.roi[1]]*2, ax.get_ylim(),  c='black')
         return ax
 
 c = CCD(35437)
-plt.plot(c.data[1000, :])
+
+plt.plot(convolve_gauss(np.sum(c.data, axis=0), 8))
 
 c.imshow()
+c.plot()
 
 # ==================================
 # shotnums = [35430, 35432, 35434, 35436]
@@ -235,4 +257,5 @@ c.imshow()
 #     pjx = PJX2(shot_num)
 #     pjx.align_peak()
 #     pjx.plot_pjx2(ax=ax)
+
 plt.show()
