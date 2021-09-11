@@ -5,14 +5,7 @@ import matplotlib.colors as colors
 from pathlib import Path
 from JSB_tools import mpl_hist, convolve_gauss
 
-"""
-PJX 2 is Space and time
-PJX 3 is energy and time
-Material is buried to "tamp" it. The layer keeps target from expanding and cooling, thus makes temperature more uniform
-SPC (Single-photon counting spectrometer) is just a normal camera. 
-Look under the "DCHOPG" directory to get the dark room things.
-CCD-time integrated, data is in an obvious stripe. 
-"""
+
 data_dir = Path(__file__).parent/'data'
 
 

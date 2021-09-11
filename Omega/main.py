@@ -1,3 +1,11 @@
+"""
+PJX 2 is Space and time (space is not interesting here, so really just time).
+PJX 3 is energy and time. Plasma was too dim to see signal.
+Material is buried to "tamp" it. The layer keeps target from expanding and cooling, thus makes temperature more uniform
+SPC (Single-photon counting spectrometer) is just a normal camera.
+Look under the "DCHOPG" directory to get the dark room things.
+CCD-time integrated, data is in an obvious stripe.
+"""
 import re
 import warnings
 from pyhdf.SD import SD
@@ -33,31 +41,33 @@ def shot_metadata() -> Tuple[Dict[str, Any], List[str]]:
     lines = list(map(str.rstrip, lines))
     labels = {}
     out = {}
-    for i in range(6):
+    for i in range(7):
         labels[i] = lines[i]
     _shot_num = 0
-    for i in range(6, len(lines)):
-        label_i = i % 6
+    for i in range(7, len(lines)):
+        label_i = i % 7
         label = labels[label_i]
         text = lines[i]
         value = text
+        if label == 'Target':
+            value = value.lstrip('-')
         if re.match('^[0-9]+$', value):
             value = int(value)
         elif re.match('^[0-9.]+$', value):
             value = float(value)
         if label == 'Shot':
-            _shot_num = value + 35427 - 1
-            out[_shot_num] = {label: _shot_num, 'True shot num':value}
+            _shot_num = value
+            out[_shot_num] = {label: _shot_num}
         else:
             assert _shot_num != 0, 'Something went wrong'
-            out[_shot_num][label] = text
+            out[_shot_num][label] = value
 
     return out, list(labels.values())
 
 
-# _shot_metadata, valid_labels = shot_metadata()
-# for k, v in _shot_metadata.items():
-#     print(k, v)
+_shot_metadata, valid_labels = shot_metadata()
+for k, v in _shot_metadata.items():
+    print(k, v)
 
 
 def get_shotnums_by_label(label):
@@ -177,9 +187,9 @@ class PJX2:
             peak.plot_fit()
 
         ax.legend(prop={'size': 11})
-        # ax.set_title(f"shot {self.shot_num}, PJX 2")
         ax.set_xlabel('Time channel')
-        ax.set_ylabel('Intensity (integrated)')
+        ax.set_ylabel('Integrated intensity')
+        ax.set_title('PJX 2')
         return ax
 
 
@@ -214,13 +224,13 @@ class CCD:
         # print(np.sum(data))
         data_bg1 = convolve_gauss(np.sum(self.data[:, self.roi[0]-w-s: self.roi[0]-s], axis=1), 5)
         data_bg2 = convolve_gauss(np.sum(self.data[:, self.roi[0] + s: self.roi[0] + w + s], axis=1), 5)
-        print(list(map(lambda x: f'{np.sum(x):.2e}', [data_bg1, data_bg2, data])))
+        # print(list(map(lambda x: f'{np.sum(x):.2e}', [data_bg1, data_bg2, data])))
         mpl_hist(np.arange(len(data) + 1), data_bg1, ax=ax, label='bg1')
         mpl_hist(np.arange(len(data) + 1), data_bg2, ax=ax, label='bg2')
         mpl_hist(np.arange(len(data) + 1), data, ax=ax, label='sig')
         ax.legend()
         return ax
-
+    
     def _find_line(self, n_sigma=1):
         a = convolve_gauss(np.sum(c.data, axis=0), 20)
         max_loc = np.argmax(a)
@@ -237,25 +247,51 @@ class CCD:
         ax.plot([self.roi[1]]*2, ax.get_ylim(),  c='black')
         return ax
 
-c = CCD(35437)
 
-plt.plot(convolve_gauss(np.sum(c.data, axis=0), 8))
+def get_same_config():
+    shot_dicts = {k: v.copy() for k, v in _shot_metadata.items()}
+    outs = {}
+    configs = []
 
-c.imshow()
-c.plot()
+    for shot_primary, d in shot_dicts.items():
+        d.pop('Shot')
+        d.pop('RID')
+        d.pop('Target')
+        key = tuple(d.items())
+        for index, config in enumerate(configs):
+            if d == config:
+                outs[key].append(shot_primary)
+                break
+        else:
+            outs[key] = [shot_primary]
+            configs.append(d)
+    return outs
+
+
+print("Same configs:")
+for k, v in get_same_config().items():
+    print(k, v)
+
+
+# c = CCD(35437)
+#
+# plt.plot(convolve_gauss(np.sum(c.data, axis=0), 8))
+#
+# c.imshow()
+# c.plot()
 
 # ==================================
-# shotnums = [35430, 35432, 35434, 35436]
-# n_overlays = 4
+shotnums = [35432, 35439]
+n_overlays = 4
 # ==================================
 # print(get_shotnums_by_label('Thick. (um)'))
 # plot_by_label('Thick. (um)')
 #
-# for index, shot_num in enumerate(shotnums):
-#     if index%n_overlays == 0:
-#         fig, ax = plt.subplots()
-#     pjx = PJX2(shot_num)
-#     pjx.align_peak()
-#     pjx.plot_pjx2(ax=ax)
+for index, shot_num in enumerate(shotnums):
+    if index%n_overlays == 0:
+        fig, ax = plt.subplots()
+    pjx = PJX2(shot_num)
+    pjx.align_peak()
+    pjx.plot_pjx2(ax=ax)
 
 plt.show()
