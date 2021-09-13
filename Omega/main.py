@@ -17,6 +17,8 @@ from JSB_tools import mpl_hist, convolve_gauss, calc_background, convolve_gauss2
 from JSB_tools.TH1 import rolling_median
 from JSB_tools.regression import PeakFit
 from typing import Union, List, Dict, Tuple, Any
+from matplotlib import rc
+
 data_dir = Path(__file__).parent/'data'
 
 
@@ -133,7 +135,11 @@ class PJX2:
         return peak_fit
 
     @staticmethod
-    def _get_label(_shot_num, labels: List[str]):
+    def _get_label(_shot_num, labels: List[str], bold_labels=None):
+        if bold_labels is None:
+            bold_labels = []
+        else:
+            rc('text', usetex=True)
         strings = []
         try:
             meta_data = _shot_metadata[_shot_num]
@@ -142,11 +148,17 @@ class PJX2:
             return ''
         for l in labels:
             assert l in valid_labels, f'Invalid label, "{l}". Valid labels are {valid_labels}'
-            strings.append(f'{l}={meta_data[l]}')
+            if meta_data[l] is bold_labels:
+                strings.append(f'{l}=' + r'\textbf{{{}}}'.format(meta_data[l]))
+            else:
+                strings.append(f'{l}={meta_data[l]}')
         return '  '.join(strings)
 
-    def plot_pjx2(self, ax=None, fig_size=6, convolve=10, bg_window=220, cut=(200, -200), labels=None,
-                  plot_fit=False):
+    def plot_pjx2(self, ax=None, fig_size=6, convolve=10,
+                  bg_window=220, cut=(200, -200),
+                  label: Union[str, List[str], None] = None,
+                  plot_fit=False, fit_label=False,
+                  bold_labels: List[str] = None, title=None, **plt_args):
         """
 
         Args:
@@ -155,15 +167,35 @@ class PJX2:
             convolve:
             bg_window:
             cut: The beginning and (maybe) end of the spectrum are not useful, make for ugly plots.
-            labels:
+            label: If None, use all shot config.
+                   If list of strings, use only shot configs corresponding to the strings.
+                    Valid labels: ['Shot', 'RID', 'Target', 'SL/BL', 'Pulse (ps)', 'Energy (J)', 'Thick. (um)']
+                   If string, simply use that string.
+                   If "None", then no label.
             plot_fit:
+            fit_label: If True, add peak amplitude and sigma to label.
+            bold_labels: Labels that wil be bold text.
+            title:
+            plt_args: Arguments to be passed to ax.plot()
+
 
         Returns:
 
         """
-        if labels is None:
-            labels = ['Shot', 'Pulse (ps)', 'Thick. (um)', 'Energy (J)']
-        label = PJX2._get_label(self.shot_num, labels)
+        if not isinstance(label, str):
+            if label is None:
+                labels = ['Shot', 'Pulse (ps)', 'Thick. (um)', 'Energy (J)']
+            else:
+                assert all(map(lambda x: isinstance(x, str), label)), 'Invalid `label` argument'
+                labels = label
+            label = PJX2._get_label(self.shot_num, labels, bold_labels=bold_labels)
+        else:
+            assert isinstance(label, str), 'Invalid label type. Must be of type Union[str, List[str], None]'
+            if label == 'None':
+                label = None
+        if plt_args is None:
+            plt_args = {}
+
         if ax is None:
             plt.figure(figsize=(16/9*fig_size, fig_size))
             ax = plt.gca()
@@ -181,15 +213,19 @@ class PJX2:
         peak_loc = np.argmax(data)
         _x = np.arange(len(data))
         peak = PeakFit(peak_loc, _x, data, window_width=100)
-        ax, _ = mpl_hist(np.arange(len(data) + 1), data, label=f'{label}\namplitude: {peak.amp.n:.2e}  '
-                                                               f'sigma: {peak.sigma: .2f}', ax=ax)
+        if fit_label:
+            label += f'\namplitude: {peak.amp.n:.2e} sigma: {peak.sigma: .2f}'
+        ax, _ = mpl_hist(np.arange(len(data) + 1), data, label=label, ax=ax, **plt_args)
         if plot_fit:
             peak.plot_fit()
 
         ax.legend(prop={'size': 11})
         ax.set_xlabel('Time channel')
-        ax.set_ylabel('Integrated intensity')
-        ax.set_title('PJX 2')
+        ax.set_ylabel('Intensity')
+        if title is None:
+            ax.set_title(f'PJ-X 2')
+        else:
+            ax.set_title(title)
         return ax
 
 
@@ -213,33 +249,40 @@ class CCD:
         self.data = _load_array(data_dir/f'HRS_CCD-s{shot_num}_hrs_ccd_lower.hdf')
         self.roi = None
 
-    def plot(self, ax=None):
+    def plot(self, ax=None, convolve=35, label=None, title=None, **plt_args):
         if ax is None:
             plt.figure()
             ax = plt.gca()
-
-        data = convolve_gauss(np.sum(self.data[:, self.roi[0]: self.roi[1]], axis=1), 5)
+        ax.set_title(f'CCD (ROI)-{self.shot_num}')
+        data = np.sum(self.data[:, self.roi[0]: self.roi[1]], axis=1)
+        data = rolling_median(convolve, data)
+        # data = convolve_gauss(, convolve)
         w = self.roi[1] - self.roi[0]
         s = 250
         # print(np.sum(data))
-        data_bg1 = convolve_gauss(np.sum(self.data[:, self.roi[0]-w-s: self.roi[0]-s], axis=1), 5)
-        data_bg2 = convolve_gauss(np.sum(self.data[:, self.roi[0] + s: self.roi[0] + w + s], axis=1), 5)
-        # print(list(map(lambda x: f'{np.sum(x):.2e}', [data_bg1, data_bg2, data])))
-        mpl_hist(np.arange(len(data) + 1), data_bg1, ax=ax, label='bg1')
-        mpl_hist(np.arange(len(data) + 1), data_bg2, ax=ax, label='bg2')
-        mpl_hist(np.arange(len(data) + 1), data, ax=ax, label='sig')
+        # data_bg1 = np.sum(self.data[:, self.roi[0] - w - s: self.roi[0] - s], axis=1)
+        # data_bg1 = convolve_gauss(data_bg1, convolve)
+        # data_bg2 = np.sum(self.data[:, self.roi[0] + s: self.roi[0] + w + s], axis=1)
+        # data_bg2 = convolve_gauss(data_bg2, convolve)
+        # data_bg1 = rolling_median(convolve, data_bg1)
+        # data_bg2 = rolling_median(convolve, data_bg2)
+        # mpl_hist(np.arange(len(data) + 1), data_bg1, ax=ax, label='bg1')
+        # mpl_hist(np.arange(len(data) + 1), data_bg2, ax=ax, label='bg2')
+        mpl_hist(np.arange(len(data) + 1), data, ax=ax, label=label, title=title, **plt_args)
         ax.legend()
         return ax
     
     def _find_line(self, n_sigma=1):
-        a = convolve_gauss(np.sum(c.data, axis=0), 20)
+        a = convolve_gauss(np.sum(self.data, axis=0), 20)
         max_loc = np.argmax(a)
-        fit = PeakFit(max_loc, np.arange(len(a)), a)
+        fit = PeakFit(max_loc, np.arange(len(a)), a, fix_center=True)
+        # fit.plot_fit()
         self.roi = (max_loc-int(n_sigma*fit.sigma.n), max_loc+int(n_sigma*fit.sigma.n))
         return self.roi
 
     def imshow(self):
         plt.figure()
+        plt.title(f'CCD-{self.shot_num}')
         ax = plt.gca()
         self._find_line()
         ax.imshow(self.data, norm=colors.LogNorm(), aspect='auto')
@@ -273,25 +316,64 @@ for k, v in get_same_config().items():
     print(k, v)
 
 
-# c = CCD(35437)
-#
-# plt.plot(convolve_gauss(np.sum(c.data, axis=0), 8))
-#
-# c.imshow()
-# c.plot()
-
 # ==================================
-shotnums = [35432, 35439]
+shotnums = [35427, 35428, 35429, 35431]
 n_overlays = 4
 # ==================================
-# print(get_shotnums_by_label('Thick. (um)'))
-# plot_by_label('Thick. (um)')
-#
+fig, ax = plt.subplots()
+
+labels = ['Energy (J) 250', 'Energy (J) 250', 'Energy (J) 500', 'Energy (J) 900']
+
 for index, shot_num in enumerate(shotnums):
     if index%n_overlays == 0:
         fig, ax = plt.subplots()
-    pjx = PJX2(shot_num)
-    pjx.align_peak()
-    pjx.plot_pjx2(ax=ax)
+#     pjx = PJX2(shot_num)
+#     pjx.align_peak()
+#     pjx.plot_pjx2(ax=ax)
+    c = CCD(shot_num)
+    c.imshow()
+    ax.set_xlabel('Energy channel')
+    ax.set_ylabel('Intensity')
+    if index == 0:
+        c.plot(ax, label=labels[index], title='CCD', color='red')
+    elif index == 1:
+        c.plot(ax, label=labels[index], title='CCD', color='red', ls='--')
+    else:
+        c.plot(ax, label=labels[index], title='CCD')
+
+
+def temp(shot1, shot2, color, title):
+    if shot1 is not None:
+        pjx = PJX2(shot1)
+        pjx.align_peak()
+        pjx.plot_pjx2(ax=ax, label=labels, c=color, title=title)
+    if shot2 is not None:
+        pjx = PJX2(shot2)
+        pjx.align_peak()
+        pjx.plot_pjx2(ax=ax, label='None', c=color, title=title)
+
+# labels = ['Thick. (um)']
+
+#  ('Pulse (ps)', 'BC'), ('Energy (J)', 500), ('Thick. (um)', varies))
+# temp(35430, None, 'blue', title='PJ-x 2; BL; Energy (J): 500 J')
+# temp(35432, 35439, 'red', title='PJ-x 2; BL; Energy (J): 500 J')
+# temp(35434, 35436, 'green', title='PJ-x 2; BL; Energy (J): 500 J')
+
+#  ('Pulse (ps)', 10), ('Energy (J)', 900), ('Thick. (um)', varies))
+# temp(35431, None, 'blue', title='PJ-X 2; Energy (J): 900 J')
+# temp(35433, 35440, 'red', title='PJ-X 2; Energy (J): 900 J')
+# temp(35435, 35437, 'green', title='PJ-X 2; Energy (J): 900 J')
+
+
+#  ('Pulse (ps)', 10), ('Energy (J)', 900), ('Thick. (um)', varies))
+# labels = ['Energy (J)']
+# temp(35427, None, 'blue', title='PJ-X 2; Pulse (ps): 10; Thick. (um): 0.5')
+# temp(35429, None, 'red', title='PJ-X 2; Pulse (ps): 10; Thick. (um): 0.5')
+# temp(35431, None, 'green', title='PJ-X 2; Pulse (ps): 10; Thick. (um): 0.5')
+
+
+ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+
+
 
 plt.show()
