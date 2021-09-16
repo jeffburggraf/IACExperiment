@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 from JSB_tools.list_reader import MaestroListFile
 
 
-# data_dir = Path(__file__).parent/'exp_data'
-data_dir = Path('/Volumes/NO NAME')
+data_dir = Path(__file__).parent/'exp_data'
+# data_dir = Path('/Volumes/NO NAME')
 
 
 def get_maesto_list_shot_paths():
@@ -34,6 +34,7 @@ def get_mpant_mca_shot_paths():
                     out[int(m.groups()[0])] = path
     out = {k:v for k, v in sorted(out.items(), key=lambda x: x[0])}
     return out
+
 
 if __name__ == '__main__':
     p132 = get_maesto_list_shot_paths()[132]
