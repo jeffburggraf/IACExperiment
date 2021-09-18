@@ -115,7 +115,7 @@ class Shot:
 
         self.maestro_list.plot_erg_spectrum(erg-half_xrange, erg+half_xrange, time_bins[0], time_bins[-1],
                                             ax=ax2)
-        self.mca.plot_spectrum(ax=ax4, erg_min=erg-half_xrange, erg_max=erg+half_xrange)
+        self.mca.plot_erg_spectrum(ax=ax4, erg_min=erg - half_xrange, erg_max=erg + half_xrange)
         _lims = ax2.get_ylim()
         ax2.fill_between(window_right, [_lims[0]]*2, [_lims[1]]*2, alpha=0.3, color='red', label='bg window')
         ax2.fill_between(window_left, [_lims[0]]*2, [_lims[1]]*2, alpha=0.3, color='red')

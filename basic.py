@@ -22,10 +22,10 @@ time_bins = (0, 300, 4)  # min, max, bin width in seconds
 n_overlays = 6
 # shots = [66, 64, 69, 68, 73, 72, 75]
 # shots = [65,66,69,70, 73, 74]
-shots = [134, 132, 128]
+shots = [79, 82, 80, 81]
 # shots = [105, 107, 113, 116]
 figsize = (10, 10*9/16)
-plot_spectrum = False
+plot_spectrum = True
 # day = 'wednesday'
 bg_window_offset = 3
 num_time_bins = 130
@@ -36,7 +36,7 @@ labels = ['He (SLPM)', 'Ar (SLPM)', 'foil pos', 'Filter temp', 'flow']
 # labels = None
 scale_Ln2 = 1.2*1.5
 #  ====================================================
-bad_shots = [42, 43, 44]
+bad_shots = [42, 43, 44, 82]
 _path = Path.cwd()/'exp_data'
 n_pulses = {}
 
@@ -156,10 +156,10 @@ for loop_index, shot_num in enumerate(shots):
         print(f'shot {shot_num} zero time: {zero_time}')
         print(l.sample_ready_state)
 
-        if all_shots[shot_num].is_ln2:  # cheat
-            sig_window = [216, 219]
-        else:
-            sig_window = gamma_Erg - window // 2, gamma_Erg + window // 2
+        # if all_shots[shot_num].is_ln2:  # cheat
+        #     sig_window = [216, 219]
+        # else:
+        sig_window = gamma_Erg - window // 2, gamma_Erg + window // 2
 
         bg_window_right = gamma_Erg + bg_window_offset + window // 2, gamma_Erg + bg_window_offset + window
         bg_window_left = gamma_Erg - bg_window_offset - window, gamma_Erg - bg_window_offset - window // 2
@@ -189,7 +189,7 @@ for loop_index, shot_num in enumerate(shots):
             time_integrated_events = l.get_energies_in_range(bg_window_left[0], bg_window_right[-1])
             time_integrated_values, _ = np.histogram(time_integrated_events, bins=l.erg_bins_cut(bg_window_left[0], bg_window_right[-1]))
 
-            ax_integrated, _ = mpl_hist(time_integrated_bins, time_integrated_values, np.sqrt(time_integrated_values),
+            ax_integrated = mpl_hist(time_integrated_bins, time_integrated_values, np.sqrt(time_integrated_values),
                                      color='red',
                                      label="BG spectrum")
             ax_integrated.fill_between(bg_window_left, [ax_integrated.get_ylim()[0]]*2, [ax_integrated.get_ylim()[1]]*2, label='bg window', alpha=0.2, color='blue')
@@ -217,23 +217,25 @@ for loop_index, shot_num in enumerate(shots):
             draw_color = None
             ls = line_styles[0]
         h, c = mpl_hist(bins, counts_signal, np.sqrt(counts_signal), label=f'shot{shot_num}; {description}', ax=ax,
-                        fig_kwargs={'figsize': (4, 4)}, ls=ls, color=draw_color)
+                        fig_kwargs={'figsize': (4, 4)}, ls=ls, color=draw_color, return_line_color=True)
 
         shot_colors.append(c)
         descriptions.append(description)
         trans_time, hl = get_rise_an_fall_times(times_sig)
 
-        if all_shots[shot_num].is_ln2:  # cheat
-            hl = 44
+        # if all_shots[shot_num].is_ln2:  # cheat
+        #     hl = 44
 
         try:
             mca = get_mpant(shot_num)
             iac_counts = mca.counts - calc_background(mca.get_counts(nominal=False))
             iac_tot_counts = np.sum(iac_counts[np.where((mca.energies >= 215) &
-                                                        (mca.energies <= 220))])
+                                                        (mca.energies <= 223))])
             print(f"IAC counts: {iac_tot_counts}")
             iac_counts_des = f"{iac_tot_counts:.1u}"
-            # mca.plot_spectrum(erg_min=200, erg_max=240)
+            if plot_integrated:
+                _ax = mca.plot_erg_spectrum(erg_min=200, erg_max=240)
+                _ax.set_title(f'MCA {shot_num}')
         except KeyError:
             iac_counts_des = ''
         ax.legend()

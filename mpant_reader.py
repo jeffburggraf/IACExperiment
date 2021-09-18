@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from datetime import datetime
 from scipy.stats import norm
 from functools import cached_property
-from JSB_tools import mpl_hist
+from JSB_tools import mpl_hist, calc_background
 from uncertainties.core import AffineScalarFunc
 from uncertainties import unumpy as unp
 from typing import List, Dict
@@ -17,6 +17,7 @@ class MPA:
     def __init__(self, path, primary_adc_number=1, aux_adc_number=3):
         assert primary_adc_number > 0, '<=0 is not a valid ADC index'
         assert aux_adc_number > 0, '<=0 is not a valid ADC index'
+        self.path = Path(path)
         self.primary_adc_number = primary_adc_number
         self.aux_adc_number = aux_adc_number
         with open(path) as f:
@@ -90,6 +91,16 @@ class MPA:
                 self.system_start_time = datetime.strptime(s, "%m/%d/%Y %H:%M:%S")
                 break
 
+    def get_baseline(self, adc=None, num_iterations=20, clipping_window_order=2, smoothening_order=5) -> np.ndarray:
+        return calc_background(self.get_counts(adc), num_iterations=num_iterations, clipping_window_order=clipping_window_order,
+                               smoothening_order=smoothening_order)
+
+    def get_baseline_removed(self, adc=None, num_iterations=20,
+                             clipping_window_order=2, smoothening_order=5) -> np.ndarray:
+        return self.get_counts(adc) - self.get_baseline(adc=adc, num_iterations=num_iterations,
+                                                        clipping_window_order=clipping_window_order,
+                                                        smoothening_order=smoothening_order)
+
     @cached_property
     def valid_adcs(self):
         return self._live_times.keys()
@@ -148,12 +159,18 @@ class MPA:
     def get_erg_bins(self, adc=None):
         return self._erg_bins[self.__get_adc_index__(adc)]
 
-    def erg_bin_index(self, erg):
-        if hasattr(erg, '__iter__'):
-            return np.array([self.erg_bin_index(e) for e in erg])
+    def __erg_index__(self, erg):
         if isinstance(erg, AffineScalarFunc):
             erg = erg.n
-        return np.searchsorted(self.erg_bins, erg, side='right') - 1
+        if erg < self.erg_bins[0]:
+            erg = self.erg_bins[0]
+        out = np.searchsorted(self.erg_bins, erg, side='right') - 1
+        return out if out > 0 else 0
+        # if hasattr(erg, '__iter__'):
+        #     return np.array([self.erg_bin_index(e) for e in erg])
+        # if isinstance(erg, AffineScalarFunc):
+        #     erg = erg.n
+        # return np.searchsorted(self.erg_bins, erg, side='right') - 1
 
     @property
     def erg_bin_widths(self):
@@ -161,7 +178,7 @@ class MPA:
 
     def get_erg_bin_widths(self, adc=None):
         adc = self.__get_adc_index__(adc)
-        return self._erg_bins[adc][1:] - self._erg_bins[adc][1:]
+        return self._erg_bins[adc][1:] - self._erg_bins[adc][:-1]
 
     def get_energies_in_range(self, erg_min, erg_max, adc=None):
         """
@@ -177,30 +194,49 @@ class MPA:
         adc = self.__get_adc_index__(adc)
         return self.get_energies(adc)[np.where((self.get_energies(adc) >= erg_min) & (self.get_energies(adc) <= erg_max))]
 
-    def plot_spectrum(self, adc=None, ax=None, leg_name=None, erg_min=None, erg_max=None,
-                      **mpl_kwargs):
+    def plot_erg_spectrum(self, adc=None, ax=None, leg_name=None, erg_min=None, erg_max=None, make_rate=False,
+                          remove_baseline=False, make_density=False,
+                          **mpl_kwargs):
         adc = self.__get_adc_index__(adc)
         if ax is None:
-            plt.figure()
+            fig = plt.figure()
+            fig.suptitle(self.path.name)
             ax = plt.gca()
+
         if erg_min is not None:
-            min_index = self.erg_bin_index(erg_min)
+            min_index = self.__erg_index__(erg_min)
         else:
             min_index = 0
         if erg_max is not None:
-            max_index = self.erg_bin_index(erg_max)
+            max_index = self.__erg_index__(erg_max)
         else:
             max_index = len(self.erg_bins)-1
+        if leg_name is None:
+            leg_name = self.path.name
         # ax.errorbar(self.get_energies(adc)[min_index: max_index],
         #             self.get_counts(adc, nominal=True)[min_index: max_index],
         #             unp.std_devs(self.get_counts(adc))[min_index: max_index],
         #             label=leg_name)
-        mpl_hist(self.erg_bins[min_index: max_index+1], self.get_counts(adc)[min_index: max_index],
-                 ax=ax, label=leg_name, **mpl_kwargs)
-        ax.set_xlabel('energy [KeV]')
-        ax.set_ylabel('counts')
-        if leg_name:
-            ax.legend()
+        y = self.get_counts(adc)[min_index: max_index]
+        if remove_baseline:
+            y = y - self.get_baseline()[min_index: max_index]
+        if make_rate:
+            y /= self.get_livetime(adc)
+        if make_density:
+            y /= self.get_erg_bin_widths(adc)[min_index: max_index]
+
+        mpl_hist(self.erg_bins[min_index: max_index+1], y, ax=ax, label=leg_name, **mpl_kwargs)
+        ylabel = 'Counts'
+        if make_rate:
+            ylabel += '/s'
+        if make_density:
+            ylabel += '/KeV'
+
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel('Energy [KeV]')
+
+        ax.legend()
+        return ax
 
 
 class MPANTList:

@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from JSB_tools.list_reader import MaestroListFile
 
@@ -37,11 +38,17 @@ def get_mpant_mca_shot_paths():
 
 
 if __name__ == '__main__':
-    p132 = get_maesto_list_shot_paths()[132]
-    l = MaestroListFile(p132)
-    l.SPE.plot_erg_spectrum()
-    plt.show()
-
-    # for path in get_maesto_list_shot_paths().values():
-    #     m = MaestroListFile(path)
-    #     m.pickle()
+    # p132 = get_maesto_list_shot_paths()[132]
+    # l = MaestroListFile(p132)
+    # l.SPE.plot_erg_spectrum()
+    # plt.show()
+    times, files = [], []
+    for path in get_maesto_list_shot_paths().values():
+        # m = MaestroListFile(path)
+        m = MaestroListFile.from_pickle(path)
+        t = m.total_real_time
+        i = np.searchsorted(-np.array(times), -t)
+        times.insert(i, t)
+        files.insert(i, path.name)
+        print(f'Longest: {files[:15]}\n {times[:15]} s\n')
+        # m.pickle()
