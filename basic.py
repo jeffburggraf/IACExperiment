@@ -186,7 +186,7 @@ for loop_index, shot_num in enumerate(shots):
 
         if plot_integrated:
             time_integrated_bins = l.erg_bins_cut(bg_window_left[0], bg_window_right[-1])
-            time_integrated_events = l.get_energies_in_range(bg_window_left[0], bg_window_right[-1])
+            time_integrated_events = l.time_slice(bg_window_left[0], bg_window_right[-1])
             time_integrated_values, _ = np.histogram(time_integrated_events, bins=l.erg_bins_cut(bg_window_left[0], bg_window_right[-1]))
 
             ax_integrated = mpl_hist(time_integrated_bins, time_integrated_values, np.sqrt(time_integrated_values),

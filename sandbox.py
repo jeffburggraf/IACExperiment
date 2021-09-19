@@ -1,61 +1,64 @@
-from JSB_tools import isinstance_generic, mpl_hist
+# import plotly.graph_objects as go
+# animals=['giraffes', 'orangutans', 'monkeys']
+#
+# fig = go.Figure(data=[
+#     go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),
+#     go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
+# ])
+# fig.update_layout(barmode='group')
+#
+# fig.show()
+import pandas
+import plotly.graph_objects as go
 import numpy as np
-from matplotlib import pyplot as plt
-import time
 
-#========================
-n = 60000
-hl = 200
-bg_rel_n_points = 1
-bg_scale = 1/3
-tmax = 100
-#  ===================================
-sig_points = np.random.exponential(hl/np.log(2),  n)
-sig, bins = np.histogram(sig_points, bins='auto')
-bg_points = np.random.exponential(hl/2/np.log(2), int(n*bg_rel_n_points/bg_scale))
-# bg_points = np.random.uniform(0, max(sig_points*1.5), int(n*bg_rel_n_points/bg_scale))
-bg, _ = np.histogram(bg_points, bins=bins, weights=bg_scale*np.ones_like(bg_points))
-
-tot_points = np.concatenate([sig_points, bg_points])
-tot = sig+bg
-ax = mpl_hist(bins, sig, label='sig')
-mpl_hist(bins, tot, ax=ax, label='tot')
-mpl_hist(bins, bg, ax=ax, label='bg')
-# ax.legend()
-tot_points = tot_points[np.where(tot_points < tmax)]
-bg_points = bg_points[np.where(bg_points < tmax)]
-
-lambda_est = (len(tot_points) - len(bg_points)) / (np.sum(tot_points) - np.sum(bg_points))
-hl_est = np.log(2) / lambda_est
-print('init: ', hl_est)
-
-data_len = len(tot_points) - len(bg_points)
-data_sum = np.sum(tot_points) - np.sum(bg_points)
+# Create figure
+fig = go.Figure()
 
 
-i = 0
+xs = np.linspace(0, 10, 12)
+ys = [i*xs**2 for i in range(len(xs))]
+# print(ys)
+# for k, v in {t: d for t, d in zip(xs, ys)}.items():
+#     print(k, v)
+df = pandas.DataFrame({t: d for t, d in zip(xs, ys)})
+print(df)
+df = df.melt()
+print(df)
+# Add traces, one for each slider step
+for step in np.arange(0, 5, 0.1):
+    fig.add_trace(
+        go.Bar(
+            visible=False,
+            name="𝜈 = " + str(step),
+            x=np.arange(0, 10, 0.01),
+            y=np.sin(step * np.arange(0, 10, 0.01))))
 
+# Make 10th trace visible
+fig.data[10].visible = True
 
-def iterate(prev_lambda=None):
-    # global i
-    # i += 1
-    if prev_lambda is None:
-        return iterate(data_len/data_sum)
-    else:
-        corr = -data_len * (tmax / (1 - np.e ** (tmax * prev_lambda)))
-        # print(corr, data_len, data_sum)
-        next_lambda = data_len/(data_sum + corr)
-        # print(np.log(2)/next_lambda)
-        if np.isclose(prev_lambda, next_lambda, rtol=0.000001):
-            return next_lambda
-        else:
-            global cor
-            return iterate(next_lambda)
+# Create and add slider
+steps = []
+for i in range(len(fig.data)):
+    step = dict(
+        method="update",
+        args=[{"visible": [False] * len(fig.data)},
+              {"title": "Slider switched to step: " + str(i)}],  # layout attribute
+    )
+    step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+    steps.append(step)
+# for s in steps:
+#     print(s)
 
+sliders = [dict(
+    active=10,
+    currentvalue={"prefix": "Frequency: "},
+    pad={"t": 50},
+    steps=steps
+)]
 
-t = time.time()
-est = np.log(2)/iterate()
-# print(corr, )
-print(time.time() - t, 'n loops: ', i)
-print(est)
-plt.show()
+fig.update_layout(
+    sliders=sliders
+)
+
+# fig.show()

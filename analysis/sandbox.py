@@ -57,7 +57,7 @@ class Shot:
         """
         time_bins = np.array(time_bins)
         if det.lower() == 'llnl':
-            times = self.maestro_list.get_times_in_range(erg_min=erg_min, erg_max=erg_max)
+            times = self.maestro_list.energy_slice(erg_min=erg_min, erg_max=erg_max)
             values, _ = np.histogram(times, bins=time_bins)
             b_centers = (time_bins[1:] + time_bins[:-1])/2
             return b_centers, unp.uarray(values, np.sqrt(values))
