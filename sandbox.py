@@ -1,17 +1,27 @@
-# import plotly.graph_objects as go
-# animals=['giraffes', 'orangutans', 'monkeys']
+# from JSB_tools.list_reader import MaestroListFile
+# from JSB_tools import mpl_hist
+# from analysis import time_offset
+# import matplotlib.pyplot as plt
+# l = MaestroListFile.from_pickle('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/shot132.Lis')
+# time_offset(l)
 #
-# fig = go.Figure(data=[
-#     go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),
-#     go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
-# ])
-# fig.update_layout(barmode='group')
+# ys, yb, bins = l.get_time_dependence(1427.7, bins='auto')
 #
-# fig.show()
-import pandas
-# from pandas import DataFrame
-# import plotly.graph_objects as go
-import numpy as np
-a = np.array([1,2,3,4,5,6,])
+# ax = mpl_hist(bins, ys)
+# mpl_hist(bins, yb, ax=ax)
+# plt.show()
 
-print(np.where(a>0))
+instnaces = {}
+
+
+
+
+@cached_cls
+class A:
+    def __init__(self, a):
+        self.a = a
+
+
+a = A(3)
+a = A(2)
+a = A(2)

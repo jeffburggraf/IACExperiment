@@ -16,3 +16,9 @@
 
 - Event rate doesn't begin to drop off until going above 80% He (20% Ar)
     shots = range(13, 19)
+
+- Mylar:
+    - 100001 flow pattern and 0.25 0.25 flow rate:
+        shots = [105, 107, 114, 116]
+    - 010010 flow pattern and 0.25 0.25 flow rate:
+        shots = []
