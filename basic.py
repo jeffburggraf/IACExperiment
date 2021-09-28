@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-from analysis.shot_des import all_shots
+from shot_des import all_shots
 from JSB_tools.list_reader import MaestroListFile
 from matplotlib import pyplot as plt
 from mpant_reader import MPA
@@ -22,7 +22,8 @@ time_bins = (0, 300, 4)  # min, max, bin width in seconds
 n_overlays = 6
 # shots = [66, 64, 69, 68, 73, 72, 75]
 # shots = [65,66,69,70, 73, 74]
-shots = [105, 107, 114, 116]
+shots = 100, 130, 134, 131
+# shots = list(range(30, 37)) + [100]
 # shots = [105, 107, 113, 116]
 figsize = (10, 10*9/16)
 plot_spectrum = True
@@ -32,7 +33,7 @@ num_time_bins = 130
 sub_bg = True
 load_from_pickle = True
 plot_integrated = True
-labels = ['He (SLPM)', 'Ar (SLPM)', 'Mylar (um)', 'flow']
+labels = ['He (SLPM)', 'Ar (SLPM)', 'Flow stop (s)', 'flow', 'Length (Chamber-Filter m)']
 # labels = None
 scale_Ln2 = 1.2*1.5
 #  ====================================================

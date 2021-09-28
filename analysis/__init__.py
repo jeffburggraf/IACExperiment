@@ -1,5 +1,9 @@
+from __future__ import annotations
+
+import warnings
+
 import numpy as np
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.list_reader import MaestroListFile, get_merged_time_dependence
 from pathlib import Path
 import re
 from openpyxl import load_workbook
@@ -9,6 +13,8 @@ from typing import Dict
 from matplotlib import pyplot as plt
 from functools import cache, cached_property
 from JSB_tools import mpl_hist
+from JSB_tools.spe_reader import SPEFile
+
 
 
 def time_offset(l: MaestroListFile):
@@ -47,20 +53,60 @@ def _get_mpant_mca_shot_paths():
     return out
 
 
+# CONFIG_ATTRIB is used as an indicator to set which Shot attributes will be used in __eq__ to test if two run
+# configurations have the same configuration.
+CONFIG_ATTRIB = object
+
+
 class Shot:
-    bad_shots = [42, 43, 44, 82, 136]
+    bad_shots = [42, 43, 44, 82, 123, 136]
+    equal_test_attribs = {'flow', 'mylar', }
+
+    def __setattr__(self, key, value):
+        if isinstance(value, tuple) and len(value) == 2 and value[-1] is CONFIG_ATTRIB:
+            self.__config_attribs__.append(key)
+            self.__dict__[key] = value[0]
+        else:
+            self.__dict__[key] = value
 
     def __init__(self, shot_num):
+        self.__config_attribs__ = []
         shot_metadata = ALL_SHOTS_METADATA[shot_num]
-        self.shotnum = shot_metadata['Run #']
-        self.flow = shot_metadata['flow']
-        self.mylar = shot_metadata['Mylar (um)']
+
+        self.flow = shot_metadata['flow'], CONFIG_ATTRIB
+        self.he_flow = shot_metadata['He (SLPM)'], CONFIG_ATTRIB
+        self.ar_flow = shot_metadata['Ar (SLPM)'], CONFIG_ATTRIB
+
+        tube_len = shot_metadata['Length (Chamber-Filter m)']
+        try:
+            self.tube_len = eval(tube_len.replace('=', '')), CONFIG_ATTRIB
+        except AttributeError:
+            self.tube_len = float(tube_len), CONFIG_ATTRIB
+
+        self.cold_filter = shot_metadata['Filter temp'] == 'LN2', CONFIG_ATTRIB
+        self.mylar = shot_metadata['Mylar (um)'], CONFIG_ATTRIB
+
+        foil_pos = shot_metadata['#1 pos from upstream']
+        self.foil_pos = "center" if foil_pos == 'center' else 'upstream', CONFIG_ATTRIB
+
+        self.flow_stop = shot_metadata['Flow stop (s)'], CONFIG_ATTRIB
+        self.num_filters = shot_metadata['#'], CONFIG_ATTRIB
+        self.beam_duration = shot_metadata['Duration (s)'], CONFIG_ATTRIB
+        self.convertor = shot_metadata['Converter'], CONFIG_ATTRIB
+
         self.n_pulses = int(shot_metadata['# pulses'])
         self.comment = shot_metadata['Comments']
+        self.shotnum = shot_metadata['Run #']
+
+        if self.shotnum in Shot.bad_shots:
+            warnings.warn(f"Bad shot {self.shotnum} used!")
 
     @cached_property
     def list(self):
-        path = _get_maesto_list_shot_paths()[self.shotnum]
+        try:
+            path = _get_maesto_list_shot_paths()[self.shotnum]
+        except KeyError:
+            raise FileNotFoundError(f"No shot {self.shotnum}")
         out = MaestroListFile.from_pickle(path)
         time_offset(out)
         return out
@@ -76,12 +122,42 @@ class Shot:
             
         pass
 
+    def __eq__(self, other: Shot):
+        assert isinstance(other, Shot)
+        for key in self.__config_attribs__:
+            v1 = getattr(self, key)
+            v2 = getattr(other, key)
+            if v1 != v2:
+                return False
+        return True
+
+    def __repr__(self, attribs=0):
+        """
+
+        Args:
+            attribs: None to print all, 0 to print select information, or a list for custom information.
+
+        Returns:
+
+        """
+        outs = []
+        if attribs is None:
+            attribs = self.__config_attribs__
+        elif attribs == 0:
+            attribs = ['flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
+
+        for attrib in attribs:
+            s = f'{attrib}={getattr(self, attrib)}'
+            outs.append(s)
+        return ', '.join(outs)
+
+
 
 ALL_SHOTS_METADATA: Dict[int, dict] = dict()
 ALL_SHOTS: Dict[int, Shot] = dict()
 
 
-def get_all_shots(load=False):
+def __get_all_shots(load=False):
     global ALL_SHOTS_METADATA
     if load:
         with open('excel.pickle', 'rb') as f:
@@ -117,27 +193,24 @@ def get_all_shots(load=False):
             break
         run_num = int(run_num)
         ALL_SHOTS_METADATA[run_num] = shot_metadata
-
+    ALL_SHOTS_METADATA = {shot_num: {k.rstrip().lstrip(): v for k, v in meta.items()}  for shot_num, meta in ALL_SHOTS_METADATA.items()}
     with open('excel.pickle', 'wb') as f:
         pickle.dump(ALL_SHOTS_METADATA, f)
 
 
-get_all_shots(True)
+__get_all_shots(True)
 
 if __name__ == '__main__':
-    import timeit
-    shot = Shot(42)
-    # ax = shot.list.plotly()
-    shot.list.plot_erg_spectrum()
-    s , _, bins = shot.list.get_time_dependence(218)
-    ax = mpl_hist(bins, s)
-    # Shot(139).list.plot_percent_live()
-    # Shot(136).list.plot_percent_live()
-    # Shot(136).list.plot_count_rate()
-    # Shot(122).list.plot_percent_live()
-    # Shot(122).list.plot_erg_spectrum(ax=ax)
+    s = SPEFile('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/Nickel/Nickel.Spe')
+    s.plot_erg_spectrum()
+    shots = list(map(lambda x: Shot(x).list, [26, 27]))
+    ax = None
+    sig, bg, bins = get_merged_time_dependence([Shot(26).list, Shot(27).list], 218.5)
+    mpl_hist(bins, sig)
+    ax = Shot(134).list.plot_erg_spectrum(time_max=60*4, remove_baseline=True)
+    Shot(34).list.plot_erg_spectrum(time_max=60*4, ax=ax, remove_baseline=True)
+
     plt.show()
-    # s = Shot(132)
 
 
 

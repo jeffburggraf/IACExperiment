@@ -5,7 +5,7 @@ from typing import Dict, List
 from typeguard import check_type
 
 #
-wb = load_workbook(filename=Path(__file__).parent.parent/'exp_data'/'IAC Run Spreadsheet.xlsx')
+wb = load_workbook(filename=Path(__file__).parent/'exp_data'/'IAC Run Spreadsheet.xlsx')
 sheet = wb['Sheet1']
 
 

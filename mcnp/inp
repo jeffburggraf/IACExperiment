@@ -1,0 +1,24 @@
+IAC simulation
+c Cells
+@Cell.get_all_cell_cards()@
+
+c Surfaces
+@Surface.get_all_surface_cards()@
+
+c
+mode e p
+MPHYS ON
+nps 1E7
+CUT:p j 1
+CUT:e j 5
+PHYS:P j j j -1 j j 1
+PHYS:n  8j 2
+SDEF
+     par = e
+     pos = 0 0 @w_convertor.zmin-dz@
+     vec = 0 0 1
+     dir = 1
+     erg = 21.5
+@Material.get_all_material_cards()@
+@F4Tally.get_all_tally_cards()@
+PRDMP 5E5
