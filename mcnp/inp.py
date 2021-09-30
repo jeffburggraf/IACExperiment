@@ -12,7 +12,7 @@ from JSB_tools.MCNP_helper.units import inch
 
 # ======================================================
 dz=1E-4
-room_w = 70
+room_w = 6*inch
 o_ring_width = 1/8*inch  # Width of o-rings
 chamber_mount_width = 1
 W2Ti_distance = 3/4*inch  # distance from W convertor to Ti window.
@@ -27,7 +27,7 @@ electron_erg = 21.5
 
 #  --- MATERIALS ---
 w_mat = Tungsten()
-du_mat = DepletedUranium()
+# du_mat = DepletedUranium()
 steel_mat = StainlessSteel()
 air_mat = Air()
 ti_mat = Titanium()
@@ -43,7 +43,7 @@ vcd_nickel_w = 0.18/(np.pi*1**2)/nickel_mat.density  # radius is 1 cm (this is a
 
 imp = ("ep", 1)
 
-w_convertor = RightCylinder(2, w_mat, imp, z0=-0.1*inch, dz=0.1*inch, cell_name='Convertor')
+w_convertor = RightCylinder(2, w_mat, imp, z0=0, dz=-0.1*inch, cell_name='Convertor')
 
 #  Chamber begins whee Ti begins
 chamber = RightCylinder(2, z0=W2Ti_distance, dz=eff_chamber_length, material=gas_mat, importance=imp,
@@ -68,24 +68,26 @@ cap_up = RightCylinder(2, material=steel_mat, importance=imp, z0=chamber.zmin, d
 cap_up.geometry = -cap_up & +aperture_dummy
 
 ti_up = RightCylinder(0.5, z0=chamber.zmin, dz=-15*units.um, material=ti_mat, importance=imp, cell_name='Ti up')
-ti_down = RightCylinder(0.5, z0=chamber.zmax, dz=15*units.um, material=ti_mat, importance=imp, cell_name='Ti down')
+ti_down = RightCylinder(0.5, z0=chamber.zmax, dz=15*units.um, material=ti_mat, importance=('ep', 10),
+                        cell_name='Ti down')
 
 chamber_target = RightCylinder(0.5, material=nickel_mat, importance=imp, z0=chamber.zmin + chamber_target_dist,
                                dz=chamber_target_w, cell_name='Chamber target')
 
 chamber.geometry = -chamber & +chamber_target  # set chamber geom now that target is added
 
-vcd_lead = RightCylinder(room_w*0.9, material=pb_mat, importance=imp, z0=w_convertor.zmax + 102, dz=vcd_lead,
+vcd_lead = RightCylinder(room_w-1E-3, material=pb_mat, importance=('ep', 20), z0=w_convertor.zmax + 102, dz=vcd_lead,
                          cell_name='VCD lead')
 
 vcd_nickel = RightCylinder(1, material=nickel_mat, importance=imp, z0=vcd_lead.zmin - 1E-2, dz=-vcd_nickel_w,
                            cell_name='VCD nickel')
 
+vcd_cell = RightCylinder(6, z0=137, dz=1.0, importance=imp, cell_name='VCD cell')
 
 room = CuboidCell(-room_w, room_w, -room_w, room_w, zmin=w_convertor.zmin-2*dz, zmax=Surface.global_zmax(),
                   material=air_mat, cell_name='Room', importance=imp)
 room.geometry = -room.surface & +w_convertor.surface & +chamber & ~mount_up & ~mount_down & ~cap_down & ~cap_up &\
-                ~ti_down & ~ti_up & +vcd_lead.surface & +vcd_nickel.surface
+                ~ti_down & ~ti_up & +vcd_lead.surface & +vcd_nickel.surface & ~vcd_cell.surface
 
 universe = Cell(geometry=+room.surface, importance=("ep", 0), cell_name='Universe')
 
@@ -97,8 +99,15 @@ tally_chamber_target.set_erg_bins(1, 21.5, 20)
 tally_vcd_nickel = F4Tally(vcd_nickel, particle='p', tally_name='VCD nickel')
 tally_vcd_nickel.set_erg_bins(1, 21.5, 20)
 
-inp = InputDeck.mcnp_input_deck(Path.cwd()/'inp', new_file_dir=Path.cwd()/'sims')
-inp.write_inp_in_scope(globals())
+tally_vcd_cell = F4Tally(vcd_cell, particle='p', tally_name='VCD cell')
+tally_vcd_cell.set_erg_bins(0.1, 10, 15)
+
+CylFMESH('p', 10, Surface.global_zmax(), rbins=20, axis_bins=50)
+CylFMESH('e', 10, Surface.global_zmax(), rbins=20, axis_bins=50)
+
+if __name__ == '__main__':
+    inp = InputDeck.mcnp_input_deck(Path.cwd()/'inp', new_file_dir=Path.cwd()/'sims')
+    inp.write_inp_in_scope(globals())
 
 
 

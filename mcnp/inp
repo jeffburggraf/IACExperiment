@@ -8,8 +8,8 @@ c Surfaces
 c
 mode e p
 MPHYS ON
-nps 1E7
-CUT:p j 1
+nps 1E9
+CUT:p j 0.1
 CUT:e j 5
 PHYS:P j j j -1 j j 1
 PHYS:n  8j 2
@@ -21,4 +21,4 @@ SDEF
      erg = 21.5
 @Material.get_all_material_cards()@
 @F4Tally.get_all_tally_cards()@
-PRDMP 5E5
+PRDMP 2E6 -2

@@ -38,5 +38,6 @@ tally_n.set_erg_bins(erg_bins_array=np.arange(0, 9, 0.5))
 tally_p = F4Tally(det_cell, 'p')
 tally_p.set_erg_bins(erg_bins_array=np.arange(0, 9, 0.5))
 
-i = InputDeck.mcnp_input_deck(Path.cwd()/'inp')
-i.write_inp_in_scope(globals())
+if __name__ == '__main__':
+    i = InputDeck.mcnp_input_deck(Path.cwd()/'inp')
+    i.write_inp_in_scope(globals())

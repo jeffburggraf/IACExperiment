@@ -224,7 +224,7 @@ for loop_index, shot_num in enumerate(shots):
         trans_time, hl = get_rise_an_fall_times(times_sig)
 
         # if all_shots[shot_num].is_ln2:  # cheat
-        #     hl = 44
+        #     time_in_seconds = 44
 
         try:
             mca = get_mpant(shot_num)

@@ -2,14 +2,16 @@ from JSB_tools.MCNP_helper.outp_reader import OutP
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from JSB_tools.MCNP_helper import units
 from erg_dist import neutron_ergs, neutron_fluxes
 from JSB_tools import mpl_hist
 
-det_area = 6*30*2.54**2  # in cm^2
+det_area = 6*30*units.inch**2  # in cm^2
+foil_area = 1  # cm^2
 
 outp = OutP(Path.cwd()/'0_inp'/'outp')
 
-n_src_neutrons = sum(neutron_fluxes)
+n_src_neutrons = sum(neutron_fluxes)*foil_area
 
 tally_n = outp.get_cell_by_name('Detector').tallys[0]
 tally_p = outp.get_cell_by_name('Detector').tallys[1]
