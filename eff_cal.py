@@ -95,7 +95,7 @@ if __name__ == '__main__':
         return True
     #
     if reload:
-        save_eff_points(path, gamma_func=get_gammas, exclude_source_func=exclude_src_function, debug=debug_print)  # Save eff points to file. Change debug to True if needed.
+        save_eff_points(path, gamma_func=get_gammas, exclude_source_func=exclude_src_function, debug=debug_print)  # Save eff.py points to file. Change debug to True if needed.
     #
 
     cal(path, debug_print)

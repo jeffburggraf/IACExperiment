@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from functools import cache, cached_property
 from JSB_tools import mpl_hist
 from JSB_tools.spe_reader import SPEFile
+from mpant_reader import MPA
 
 
 
@@ -63,13 +64,30 @@ class Shot:
     equal_test_attribs = {'flow', 'mylar', }
 
     def __setattr__(self, key, value):
+        """
+        If attribute is set with a Tuple for which the second value is CONFIG_ATTRIB, then this attribute is considered
+            in determining if two shots are equal. These attributes are also the default used in __repr__
+        Args:
+            key:
+            value:
+
+        Returns:
+
+        """
         if isinstance(value, tuple) and len(value) == 2 and value[-1] is CONFIG_ATTRIB:
             self.__config_attribs__.append(key)
             self.__dict__[key] = value[0]
         else:
             self.__dict__[key] = value
 
+    @staticmethod
+    def background_spe():
+        return SPEFile(Path.cwd().parent/'exp_data'/'tuesday'/'BG.Spe')
+
     def __init__(self, shot_num):
+        """
+
+        """
         self.__config_attribs__ = []
         shot_metadata = ALL_SHOTS_METADATA[shot_num]
 
@@ -98,8 +116,21 @@ class Shot:
         self.comment = shot_metadata['Comments']
         self.shotnum = shot_metadata['Run #']
 
+        # for k, v in shot_metadata.items():
+        #     print(k.__repr__(), v)
+        self.iac_filter_pos = shot_metadata['IAC Det Pos.']
+        self.llnl_filter_pos = shot_metadata['LLNL Det Pos.']
+
         if self.shotnum in Shot.bad_shots:
             warnings.warn(f"Bad shot {self.shotnum} used!")
+
+    @property
+    def filters_before_llnl_det(self):
+        return self.llnl_filter_pos - 1
+
+    @property
+    def filters_before_iac_det(self):
+        return self.iac_filter_pos - 1
 
     @cached_property
     def list(self):
@@ -110,7 +141,19 @@ class Shot:
         out = MaestroListFile.from_pickle(path)
         time_offset(out)
         return out
- 
+
+    @property
+    def llnl_spe(self):
+        return self.list.SPE
+
+    @cached_property
+    def iac_spe(self) -> SPEFile:
+        try:
+            path = _get_mpant_mca_shot_paths()[self.shotnum]
+        except KeyError:
+            raise FileNotFoundError(f"No shot {self.shotnum}.mpa")
+        return MPA(path)
+
     @staticmethod
     def find_shots(**attribs):
         shots = []
@@ -198,10 +241,10 @@ def __get_all_shots(load=False):
         pickle.dump(ALL_SHOTS_METADATA, f)
 
 
-__get_all_shots(True)
+__get_all_shots(False)
 
 if __name__ == '__main__':
-    s = SPEFile('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/Nickel/Nickel.Spe')
+    s = SPEFile('/exp_data/Nickel/Nickel_original.Spe')
     s.plot_erg_spectrum()
     shots = list(map(lambda x: Shot(x).list, [26, 27]))
     ax = None

@@ -48,10 +48,10 @@ if __name__ == '__main__':
     times, files = [], []
     for path in get_maesto_list_shot_paths().values():
         # m = MaestroListFile(path)
-        m = MaestroListFile.from_pickle(path)
-        t = m.total_real_time
+        m = MaestroListFile(path)
+        t = m.total_realtime
         i = np.searchsorted(-np.array(times), -t)
         times.insert(i, t)
         files.insert(i, path.name)
         print(f'Longest: {files[:15]}\n {times[:15]} s\n')
-        # m.pickle()
+        m.pickle()

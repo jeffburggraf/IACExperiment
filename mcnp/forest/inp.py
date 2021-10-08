@@ -21,13 +21,13 @@ imp = ('np', 1)
 du_mat = DepletedUranium()
 air_mat = Air()
 
-foil = CuboidCell(-0.5, 0.5, -0.5, 0.5, zmin=0, zmax=0.05, material=du_mat, importance=imp)
+foil = CuboidCell(-0.5, 0.5, -0.5, 0.5, z0=0, z1=0.05, material=du_mat, importance=imp)
 
-det_cell = CuboidCell(xmin=-det_heigth/2., xmax=det_heigth/2, ymin=det_distance, ymax=det_distance+det_depth,
-                      zmin=-det_width/2, zmax=det_width/2, importance=imp, cell_name='Detector')
+det_cell = CuboidCell(x0=-det_heigth / 2., x1=det_heigth / 2, y0=det_distance, y1=det_distance + det_depth,
+                      z0=-det_width / 2, z1=det_width / 2, importance=imp, cell_name='Detector')
 
-room_cell = CuboidCell(xmin=det_cell.xmin, xmax=det_cell.xmax, ymin=foil.ymin, ymax=det_cell.ymax,
-                       zmin=det_cell.zmin, zmax=det_cell.zmax, cell_name='Room', importance=imp, material=air_mat)
+room_cell = CuboidCell(x0=det_cell.xmin, x1=det_cell.xmax, y0=foil.ymin, y1=det_cell.ymax,
+                       z0=det_cell.zmin, z1=det_cell.zmax, cell_name='Room', importance=imp, material=air_mat)
 room_cell.geometry = +foil & +det_cell.surface & -room_cell.surface
 
 universe = Cell(geometry=+room_cell, importance=('np', 0))

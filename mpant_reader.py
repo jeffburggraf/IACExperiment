@@ -11,7 +11,7 @@ from typing import Dict
 from JSB_tools.spe_reader import SPEFile
 
 
-class MPA:
+class MPA(SPEFile):
     """
     Builds an SPEFile class from the MPA data and returns an instance of that class.
 
