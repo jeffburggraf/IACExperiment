@@ -1,0 +1,24 @@
+Things we should have done
+- [ ] Starting with a fresh filter, do a shot and run over night to capture long lived FF’s (like Tc-134 @ 210.5 KeV).
+- [ ] Cold filter test with different flow patterns
+
+
+Observed FFs (bold means likely):
+- [ ] Ba121 @ 110, 210, and 99 KeV (hl 30 s) (maybe)
+- [ ] Kr-90 @ 121, 1118.69  KeV
+- [ ] Unknown @ 250, 1262, 1513 KeV, hl = 4000 s
+- [ ] Kr-89 @ 221 KeV
+- [ ] Nb-99 @ (137.7,  97.7 KeV) hl=15 s
+- [ ] Xe-137 (455 KeV)
+- [ ] La-144 (397.4, 541 KeV), hl=40 (fairly likely)
+- [ ] Mo-104 (69, 70 KeV), hl = 60
+- [ ] Cs-140 (602 KeV)
+- [ ] Cs-124 (534 KeV) hl=30 s
+- [ ] Sr-94 (1427.7 KeV), hl=75 s (Note: Sticks in filter + good counts!)
+- [ ] Ru91_m1  @ 393.7 and 1096 KeV  hl=7.6 s (maybe)
+- [ ] Xe-140 @ 805 and 1413 KeV, hl=13 s (Note: high decay rate could be useful)
+
+
+In Nickel:
+- [ ] Ni62 (g, p) -> Co61 @ 67.4 KeV observed. Hl = 1.6 h
+
