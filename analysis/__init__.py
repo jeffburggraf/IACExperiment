@@ -125,6 +125,10 @@ class Shot:
             warnings.warn(f"Bad shot {self.shotnum} used!")
 
     @property
+    def max_time(self):
+        return self.list.times[-1]
+
+    @property
     def filters_before_llnl_det(self):
         return self.llnl_filter_pos - 1
 
@@ -138,7 +142,11 @@ class Shot:
             path = _get_maesto_list_shot_paths()[self.shotnum]
         except KeyError:
             raise FileNotFoundError(f"No shot {self.shotnum}")
-        out = MaestroListFile.from_pickle(path)
+        try:
+            out = MaestroListFile.from_pickle(path)
+        except FileNotFoundError:
+            out = MaestroListFile(path)
+            out.pickle()
         time_offset(out)
         return out
 
