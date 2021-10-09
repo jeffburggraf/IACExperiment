@@ -1,32 +1,11 @@
-# import plotly.graph_objects as go
-# animals=['giraffes', 'orangutans', 'monkeys']
-#
-# fig = go.Figure(data=[
-#     go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),
-#     go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
-# ])
-# fig.update_layout(barmode='group')
-#
-# fig.show()
-from pathlib import Path
-import pandas
-# from pandas import DataFrame
-# import plotly.graph_objects as go
-import numpy as np
-a = np.array([1,2,3,4,5,6,])
+from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.spe_reader import SPEFile
+import timeit
+import cProfile
 
-p = Path(r"C:\Users\garag\OneDrive\Desktop\fakeSPE.Spe")
-with open(p) as f:
-    lines = f.readlines()
-for l_i, line in enumerate(lines):
-    if '@@@' in line:
-        counts = np.zeros(16384, dtype=int)
-        for i in range(0, 100, 10):
-            counts[i] = 100
-        line = '\n'.join(map(str, counts)) + '\n'
-        lines[l_i] = line
-print(p.with_name('fuckyou').with_suffix('.Spe'))
-with open(p.with_name('fuckyou').with_suffix('.Spe'), 'w') as f:
-    f.write(''.join(lines))
+spe = MaestroListFile('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/shot133.Lis')
+spe.build_spe()
+cProfile.run('spe.__build_spe__()', )
+t1 = timeit.timeit('spe.__build_spe__()', number=100, globals=globals())
+print(t1)
 
-print(np.where(a>0))

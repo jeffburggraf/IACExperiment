@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-from analysis.shot_des import all_shots
+from shot_des import all_shots
 from JSB_tools.list_reader import MaestroListFile
 from matplotlib import pyplot as plt
 from mpant_reader import MPA
@@ -22,7 +22,8 @@ time_bins = (0, 300, 4)  # min, max, bin width in seconds
 n_overlays = 6
 # shots = [66, 64, 69, 68, 73, 72, 75]
 # shots = [65,66,69,70, 73, 74]
-shots = [79, 82, 80, 81]
+shots = 100, 130, 134, 131
+# shots = list(range(30, 37)) + [100]
 # shots = [105, 107, 113, 116]
 figsize = (10, 10*9/16)
 plot_spectrum = True
@@ -30,9 +31,9 @@ plot_spectrum = True
 bg_window_offset = 3
 num_time_bins = 130
 sub_bg = True
-load_from_pickle = False
+load_from_pickle = True
 plot_integrated = True
-labels = ['He (SLPM)', 'Ar (SLPM)', 'foil pos', 'Filter temp', 'flow']
+labels = ['He (SLPM)', 'Ar (SLPM)', 'Flow stop (s)', 'flow', 'Length (Chamber-Filter m)']
 # labels = None
 scale_Ln2 = 1.2*1.5
 #  ====================================================
@@ -185,9 +186,8 @@ for loop_index, shot_num in enumerate(shots):
         bg_values_left, _ = np.histogram(rel_times[get_cut(l.energies, *bg_window_left)], bins=_time_bins)
 
         if plot_integrated:
-            time_integrated_bins = l.erg_bins_cut(bg_window_left[0], bg_window_right[-1])
-            time_integrated_events = l.time_slice(bg_window_left[0], bg_window_right[-1])
-            time_integrated_values, _ = np.histogram(time_integrated_events, bins=l.erg_bins_cut(bg_window_left[0], bg_window_right[-1]))
+            time_integrated_values, time_integrated_bins = l.get_erg_spectrum(bg_window_left[0], bg_window_right[-1], time_min=_time_bins[0],
+                                                        time_max=_time_bins[-1], return_bins=True)
 
             ax_integrated = mpl_hist(time_integrated_bins, time_integrated_values, np.sqrt(time_integrated_values),
                                      color='red',
@@ -224,7 +224,7 @@ for loop_index, shot_num in enumerate(shots):
         trans_time, hl = get_rise_an_fall_times(times_sig)
 
         # if all_shots[shot_num].is_ln2:  # cheat
-        #     hl = 44
+        #     time_in_seconds = 44
 
         try:
             mca = get_mpant(shot_num)

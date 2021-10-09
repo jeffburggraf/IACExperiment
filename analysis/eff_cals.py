@@ -5,7 +5,7 @@ from mpant_reader import MPA
 from matplotlib import pyplot as plt
 import uncertainties.unumpy as unp
 from typing import Union
-from JSB_tools import Nuclide, mpl_hist, plot_window
+from JSB_tools import Nuclide, mpl_hist, shade_plot
 from cal_data.cal_sources import CalSource
 data_dir = Path(__file__).parent.parent/'exp_data'
 from JSB_tools.regression import LogPolyFit
@@ -42,11 +42,11 @@ class CalData:
             raise FileNotFoundError(path)
         self.spec: Union[SPEFile, MPA]
         if llnl_det:
-            self.spec = SPEFile(path)
+            self.spec: SPEFile = SPEFile(path)
             if cal_spe is not None:
                 self.spec.set_energy_cal(*cal_spe.erg_calibration)
         else:
-            self.spec = MPA(path)
+            self.spec: SPEFile = MPA(path)
         self.counts = self.spec.counts
         self.counts = self.spec.get_baseline_removed()
         self.rates = self.counts/self.spec.livetime
@@ -88,16 +88,18 @@ class CalData:
             gamma_line = self.nuclide.get_gamma_nearest(gamma_index_or_energy)
 
         erg = gamma_line.erg.n
-        min_index = self.spec.__erg_index__(erg-window_kev/2)
-        max_index = self.spec.__erg_index__(erg+window_kev/2)
-        tot_events = np.sum(self.counts[min_index: max_index+1])
+        # min_index = self.spec.__erg_index__(erg-window_kev/2)
+        # max_index = self.spec.__erg_index__(erg+window_kev/2)
+        # tot_events = np.sum(self.counts[min_index: max_index+1])
+        tot_events = np.sum(self.spec.get_counts(erg-window_kev/2, erg+window_kev/2, remove_baseline=True,
+                                                 deadtime_corr=True))
         true_events = self.true_decays*gamma_line.intensity
         out = tot_events/true_events
         if debug_plot is not None:
             ax = self.spec.plot_erg_spectrum(erg_min=erg-10*window_kev, erg_max=erg+10*window_kev, remove_baseline=True,
                                              make_rate=True, make_density=True)
             ax.set_title(f"{self.nuclide.name}: {gamma_line.erg} KeV\neff:{out}")
-            plot_window(ax, [erg-window_kev/2, erg+window_kev/2], label=f'window; n_events: {tot_events}')
+            shade_plot(ax, [erg-window_kev/2, erg+window_kev/2], label=f'window; n_events: {tot_events}')
             ax.legend()
         return erg, out
 
@@ -130,7 +132,7 @@ if __name__ == '__main__':
         c2 = CalData('thursday', False, evening=False, nuclide='Cs137')
         c2.plot_rate()
         c3 = CalData('thursday', False, evening=False, nuclide='Eu152')
-        eu_ergs = [121.782, 344.279, 964.059, 1085., 1112.081]
+        eu_ergs = [121.782, 344.279, 964.059, 1085., 1112.081,  1408.020]
 
     fig, ax = plt.subplots()
     for c in [c1, c3]:
@@ -138,7 +140,7 @@ if __name__ == '__main__':
         if c.nuclide.name == 'Eu152':
             window = None if llnl_det else 40
             for e in eu_ergs:
-                x, y, = c.calc_efficiency(gamma_index_or_energy=e, debug_plot=True)
+                x, y, = c.calc_efficiency(gamma_index_or_energy=e, debug_plot=True, window_kev=25)
                 xs.append(x)
                 ys.append(y)
         else:

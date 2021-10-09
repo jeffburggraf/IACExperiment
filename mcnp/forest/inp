@@ -1,0 +1,24 @@
+Forest simulation
+c Cells
+@Cell.get_all_cell_cards()@
+
+c Surfaces
+@Surface.get_all_surface_cards()@
+
+c
+mode n p
+PHYS:P j j j -1 j j 1
+PHYS:n  8j 2
+ACT FISSION=p
+CUT:n j @neutron_ergs[0]-0.01@
+NPS 1E8
+MPHYS ON
+SDEF
+     par = n
+     pos = 0 0 -0.05
+     vec = 0 0 1
+     dir = 1
+     erg = D@si_card.si_card_number@
+@si_card.card@
+@Material.get_all_material_cards()@
+@F4Tally.get_all_tally_cards()@

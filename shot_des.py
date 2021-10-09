@@ -5,7 +5,7 @@ from typing import Dict, List
 from typeguard import check_type
 
 #
-wb = load_workbook(filename=Path(__file__).parent.parent/'exp_data'/'IAC Run Spreadsheet.xlsx')
+wb = load_workbook(filename=Path(__file__).parent/'exp_data'/'IAC Run Spreadsheet.xlsx')
 sheet = wb['Sheet1']
 
 
@@ -54,10 +54,11 @@ class ShotInfo:
         else:
             self.is_valid = True
 
-        flow = [''.join(map(str,
-                            (entries_dict[f'Upstream{i}'], entries_dict[f'Center{i}'],
-                             entries_dict[f'Downstream{i}'])))
-                for i in [1, 2]]
+        flow = ''.join(map(str,
+                        (entries_dict[f'Upstream Inlet'], entries_dict['Center Inlet'], entries_dict['Downstream Inlet']
+                         ,entries_dict[f'Upstream Outlet'], entries_dict['Center Outlet'],
+                         entries_dict['Downstream Outlet'])))
+
         self.flow = flow
         self.entries_dict['flow'] = self.flow
         # self.entries_dict['foil pos'] = self.ufoil_pos
@@ -77,20 +78,13 @@ class ShotInfo:
 
 
 header = []
-n = None
+
 for h in sheet['2']:
     h = h.value
     if not h:
         break
-    if 'Upstream' in h:
-        if n is None:
-            n = 1
-        else:
-            n += 1
-    if re.match("Upstream|Downstream|Center", h):
-        header.append(f'{h}{n}')
-    else:
-        header.append(h)
+    header.append(h)
+
 
 print(header)
 all_shots: Dict[int, ShotInfo] = {}

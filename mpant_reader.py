@@ -4,16 +4,29 @@ import numpy as np
 import re
 from matplotlib import pyplot as plt
 from datetime import datetime
-from scipy.stats import norm
 from functools import cached_property
-from JSB_tools import mpl_hist, calc_background
-from uncertainties.core import AffineScalarFunc
+from JSB_tools import mpl_hist
 from uncertainties import unumpy as unp
-from typing import List, Dict
-from uncertainties import umath
+from typing import Dict
+from JSB_tools.spe_reader import SPEFile
 
 
-class MPA:
+class MPA(SPEFile):
+    """
+    Builds an SPEFile class from the MPA data and returns an instance of that class.
+
+    """
+    def __new__(cls, *args, **kwargs) -> SPEFile:
+        obj = super(MPA, cls).__new__(cls)
+        obj.__init__(*args, **kwargs)
+        path = (obj.path.parent / f'{obj.path.with_suffix("").name}_mpa').with_suffix('.Spe')
+
+        spe = SPEFile.build(path, obj._counts[obj.primary_adc_number], obj._erg_coeffs[obj.primary_adc_number],
+                            obj._real_times[obj.primary_adc_number],
+                            obj._real_times[obj.primary_adc_number],
+                            system_start_time=obj.system_start_time)
+        return spe
+
     def __init__(self, path, primary_adc_number=1, aux_adc_number=3):
         assert primary_adc_number > 0, '<=0 is not a valid ADC index'
         assert aux_adc_number > 0, '<=0 is not a valid ADC index'
@@ -64,13 +77,14 @@ class MPA:
                 if adc_number is not None:
                     counts[adc_number].append(int(line))
                 else:
-                    warnings.warn("Expected a line like [DATA[0-9],[0-9]+ ] after header. Didnt see one. Beware.")
+                    warnings.warn("Expected a line that would match the following regex after the header: "
+                                  "'[DATA[0-9],[0-9]+ ]'. Didn't see one, so beware.")
 
         self._counts = {adc_number: unp.uarray(c, np.sqrt(c)) for adc_number, c in counts.items()}
 
-        channels = {adc_number: np.arange(0, adc_dict['range']) + 0.5 for adc_number, adc_dict in adc_headers_dict.items()}
+        channels = {adc_number: np.arange(0, adc_dict['range']) for adc_number, adc_dict in adc_headers_dict.items()}
 
-        channels_bins = {adc_number: np.arange(0, adc_dict['range']+1) for adc_number, adc_dict in adc_headers_dict.items()}
+        channels_bins = {adc_number: np.arange(0, adc_dict['range']+1)-0.5 for adc_number, adc_dict in adc_headers_dict.items()}
 
         self._erg_coeffs = {adc_number: np.array([adc_dict['caloff'], adc_dict['calfact']])
                             for adc_number, adc_dict in adc_headers_dict.items()}
@@ -83,7 +97,6 @@ class MPA:
 
         self._live_times = {adc_number: adc_dict['livetime'] for adc_number, adc_dict in adc_headers_dict.items()}
         self._real_times = {adc_number: adc_dict['realtime'] for adc_number, adc_dict in adc_headers_dict.items()}
-        # self._real_times = [adc_dict['runtime'] for adc_dict in adc_headers_dict.values()]
 
         for line in header:
             if m := re.match("REPORT-FILE from (.+) written", line):
@@ -91,152 +104,161 @@ class MPA:
                 self.system_start_time = datetime.strptime(s, "%m/%d/%Y %H:%M:%S")
                 break
 
-    def get_baseline(self, adc=None, num_iterations=20, clipping_window_order=2, smoothening_order=5) -> np.ndarray:
-        return calc_background(self.get_counts(adc), num_iterations=num_iterations, clipping_window_order=clipping_window_order,
-                               smoothening_order=smoothening_order)
-
-    def get_baseline_removed(self, adc=None, num_iterations=20,
-                             clipping_window_order=2, smoothening_order=5) -> np.ndarray:
-        return self.get_counts(adc) - self.get_baseline(adc=adc, num_iterations=num_iterations,
-                                                        clipping_window_order=clipping_window_order,
-                                                        smoothening_order=smoothening_order)
-
-    @cached_property
-    def valid_adcs(self):
-        return self._live_times.keys()
-
-    def __get_adc_index__(self, adc):
-        if adc is None:
-            return self.primary_adc_number
-        else:
-            assert adc > 0,  "ADC starts at 1, not 0."
-            return adc
-
-    def channel2erg(self, ch, adc=1):
-        # todo: Is this right? is there a "zero" channel? Compare to MPANT.
-        return self.get_energies(adc)[int(ch)]
-
-    @property
-    def livetime(self):
-        return self.get_livetime()
-
-    def get_livetime(self, adc=None):
-        return self._live_times[self.__get_adc_index__(adc)]
-
-    @property
-    def realtime(self):
-        return self.get_realtime()
-
-    def get_realtime(self, adc=None):
-        if adc is None:
-            adc = self.primary_adc_number
-        else:
-            assert adc > 0, "ADC starts at 1, not 0."
-        return self._real_times[adc]
-
-    @property
-    def counts(self, adc=None, nominal=False):
-        return self.get_counts(self.__get_adc_index__(adc), nominal=nominal)
-
-    def get_counts(self, adc=None, nominal=False):
-        adc = self.__get_adc_index__(adc)
-        if nominal:
-            return unp.nominal_values(self._counts[adc])
-        else:
-            return self._counts[adc]
-
-    @property
-    def energies(self, adc=None):
-        return self.get_energies(self.__get_adc_index__(adc))
-
-    def get_energies(self, adc=None):
-        return self._energies[self.__get_adc_index__(adc)]
-
-    @property
-    def erg_bins(self):
-        return self.get_erg_bins(adc=self.primary_adc_number)
-
-    def get_erg_bins(self, adc=None):
-        return self._erg_bins[self.__get_adc_index__(adc)]
-
-    def __erg_index__(self, erg):
-        if isinstance(erg, AffineScalarFunc):
-            erg = erg.n
-        if erg < self.erg_bins[0]:
-            erg = self.erg_bins[0]
-        out = np.searchsorted(self.erg_bins, erg, side='right') - 1
-        return out if out > 0 else 0
-        # if hasattr(erg, '__iter__'):
-        #     return np.array([self.erg_bin_index(e) for e in erg])
-        # if isinstance(erg, AffineScalarFunc):
-        #     erg = erg.n
-        # return np.searchsorted(self.erg_bins, erg, side='right') - 1
-
-    @property
-    def erg_bin_widths(self):
-        return self.get_erg_bin_widths(adc=self.primary_adc_number)
-
-    def get_erg_bin_widths(self, adc=None):
-        adc = self.__get_adc_index__(adc)
-        return self._erg_bins[adc][1:] - self._erg_bins[adc][:-1]
-
-    def get_energies_in_range(self, erg_min, erg_max, adc=None):
-        """
-        Integrate events over energy.
-        Args:
-            erg_min:
-            erg_max:
-            adc:
-
-        Returns:
-
-        """
-        adc = self.__get_adc_index__(adc)
-        return self.get_energies(adc)[np.where((self.get_energies(adc) >= erg_min) & (self.get_energies(adc) <= erg_max))]
-
-    def plot_erg_spectrum(self, adc=None, ax=None, leg_name=None, erg_min=None, erg_max=None, make_rate=False,
-                          remove_baseline=False, make_density=False,
-                          **mpl_kwargs):
-        adc = self.__get_adc_index__(adc)
-        if ax is None:
-            fig = plt.figure()
-            fig.suptitle(self.path.name)
-            ax = plt.gca()
-
-        if erg_min is not None:
-            min_index = self.__erg_index__(erg_min)
-        else:
-            min_index = 0
-        if erg_max is not None:
-            max_index = self.__erg_index__(erg_max)
-        else:
-            max_index = len(self.erg_bins)-1
-        if leg_name is None:
-            leg_name = self.path.name
-        # ax.errorbar(self.get_energies(adc)[min_index: max_index],
-        #             self.get_counts(adc, nominal=True)[min_index: max_index],
-        #             unp.std_devs(self.get_counts(adc))[min_index: max_index],
-        #             label=leg_name)
-        y = self.get_counts(adc)[min_index: max_index]
-        if remove_baseline:
-            y = y - self.get_baseline()[min_index: max_index]
-        if make_rate:
-            y /= self.get_livetime(adc)
-        if make_density:
-            y /= self.get_erg_bin_widths(adc)[min_index: max_index]
-
-        mpl_hist(self.erg_bins[min_index: max_index+1], y, ax=ax, label=leg_name, **mpl_kwargs)
-        ylabel = 'Counts'
-        if make_rate:
-            ylabel += '/s'
-        if make_density:
-            ylabel += '/KeV'
-
-        ax.set_ylabel(ylabel)
-        ax.set_xlabel('Energy [KeV]')
-
-        ax.legend()
-        return ax
+    # def get_baseline(self, adc=None, num_iterations=20, clipping_window_order=2, smoothening_order=5) -> np.ndarray:
+    #     return calc_background(self.get_counts(adc), num_iterations=num_iterations, clipping_window_order=clipping_window_order,
+    #                            smoothening_order=smoothening_order)
+    #
+    # def get_baseline_removed(self, adc=None, num_iterations=20,
+    #                          clipping_window_order=2, smoothening_order=5) -> np.ndarray:
+    #     return self.get_counts(adc) - self.get_baseline(adc=adc, num_iterations=num_iterations,
+    #                                                     clipping_window_order=clipping_window_order,
+    #                                                     smoothening_order=smoothening_order)
+    #
+    # @cached_property
+    # def valid_adcs(self):
+    #     return self._live_times.keys()
+    #
+    # def __get_adc_index__(self, adc):
+    #     if adc is None:
+    #         return self.primary_adc_number
+    #     else:
+    #         assert adc > 0,  "ADC starts at 1, not 0."
+    #         return adc
+    #
+    # def channel2erg(self, ch, adc=1):
+    #     # todo: Is this right? is there a "zero" channel? Compare to MPANT.
+    #     return self.get_energies(adc)[int(ch)]
+    #
+    # @property
+    # def livetime(self):
+    #     return self.get_livetime()
+    #
+    # def get_livetime(self, adc=None):
+    #     return self._live_times[self.__get_adc_index__(adc)]
+    #
+    # @property
+    # def realtime(self):
+    #     return self.get_realtime()
+    #
+    # def get_realtime(self, adc=None):
+    #     if adc is None:
+    #         adc = self.primary_adc_number
+    #     else:
+    #         assert adc > 0, "ADC starts at 1, not 0."
+    #     return self._real_times[adc]
+    #
+    # @property
+    # def counts(self, adc=None, nominal=False):
+    #     return self.get_counts(self.__get_adc_index__(adc), nominal=nominal)
+    #
+    # def get_counts(self, erg_min=None, erg_max=None, adc=None, nominal=False, remove_baseline=False):
+    #     if erg_min is None:
+    #         erg_min = self.erg_bins[0]
+    #     if erg_max is None:
+    #         erg_max = self.erg_bins[-1]
+    #     adc = self.__get_adc_index__(adc)
+    #     out = self._counts[adc][self.__erg_index__(erg_min): self.__erg_index__(erg_max)]
+    #
+    #     if remove_baseline:
+    #         out = out - calc_background(out)
+    #
+    #     if nominal:
+    #         return unp.nominal_values(out)
+    #     else:
+    #         return out
+    #
+    # @property
+    # def energies(self, adc=None):
+    #     return self.get_energies(self.__get_adc_index__(adc))
+    #
+    # def get_energies(self, adc=None):
+    #     return self._energies[self.__get_adc_index__(adc)]
+    #
+    # @property
+    # def erg_bins(self):
+    #     return self.get_erg_bins(adc=self.primary_adc_number)
+    #
+    # def get_erg_bins(self, adc=None):
+    #     return self._erg_bins[self.__get_adc_index__(adc)]
+    #
+    # def __erg_index__(self, erg):
+    #     if isinstance(erg, AffineScalarFunc):
+    #         erg = erg.n
+    #     if erg < self.erg_bins[0]:
+    #         erg = self.erg_bins[0]
+    #     out = np.searchsorted(self.erg_bins, erg, side='right') - 1
+    #     return out if out > 0 else 0
+    #     # if hasattr(erg, '__iter__'):
+    #     #     return np.array([self.erg_bin_index(e) for e in erg])
+    #     # if isinstance(erg, AffineScalarFunc):
+    #     #     erg = erg.n
+    #     # return np.searchsorted(self.erg_bins, erg, side='right') - 1
+    #
+    # @property
+    # def erg_bin_widths(self):
+    #     return self.get_erg_bin_widths(adc=self.primary_adc_number)
+    #
+    # def get_erg_bin_widths(self, adc=None):
+    #     adc = self.__get_adc_index__(adc)
+    #     return self._erg_bins[adc][1:] - self._erg_bins[adc][:-1]
+    #
+    # def get_energies_in_range(self, erg_min, erg_max, adc=None):
+    #     """
+    #     Integrate events over energy.
+    #     Args:
+    #         erg_min:
+    #         erg_max:
+    #         adc:
+    #
+    #     Returns:
+    #
+    #     """
+    #     adc = self.__get_adc_index__(adc)
+    #     return self.get_energies(adc)[np.where((self.get_energies(adc) >= erg_min) & (self.get_energies(adc) <= erg_max))]
+    #
+    # def plot_erg_spectrum(self, adc=None, ax=None, leg_name=None, erg_min=None, erg_max=None, make_rate=False,
+    #                       remove_baseline=False, make_density=False,
+    #                       **mpl_kwargs):
+    #     adc = self.__get_adc_index__(adc)
+    #     if ax is None:
+    #         fig = plt.figure()
+    #         fig.suptitle(self.path.name)
+    #         ax = plt.gca()
+    #
+    #     if erg_min is not None:
+    #         min_index = self.__erg_index__(erg_min)
+    #     else:
+    #         min_index = 0
+    #     if erg_max is not None:
+    #         max_index = self.__erg_index__(erg_max)
+    #     else:
+    #         max_index = len(self.erg_bins)-1
+    #     if leg_name is None:
+    #         leg_name = self.path.name
+    #     # ax.errorbar(self.get_energies(adc)[min_index: max_index],
+    #     #             self.get_counts(adc, nominal=True)[min_index: max_index],
+    #     #             unp.std_devs(self.get_counts(adc))[min_index: max_index],
+    #     #             label=leg_name)
+    #     y = self.get_counts(adc)[min_index: max_index]
+    #     if remove_baseline:
+    #         y = y - self.get_baseline()[min_index: max_index]
+    #     if make_rate:
+    #         y /= self.get_livetime(adc)
+    #     if make_density:
+    #         y /= self.get_erg_bin_widths(adc)[min_index: max_index]
+    #
+    #     mpl_hist(self.erg_bins[min_index: max_index+1], y, ax=ax, label=leg_name, **mpl_kwargs)
+    #     ylabel = 'Counts'
+    #     if make_rate:
+    #         ylabel += '/s'
+    #     if make_density:
+    #         ylabel += '/KeV'
+    #
+    #     ax.set_ylabel(ylabel)
+    #     ax.set_xlabel('Energy [KeV]')
+    #
+    #     ax.legend()
+    #     return ax
 
 
 class MPANTList:
@@ -426,16 +448,45 @@ class MPANTList:
 
 
 if __name__ == '__main__':
-    l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/jeff002.txt', )
-    print(l.valid_adcs)
-    # l.plot_percent_live(adc=3)
-    plt.plot(l.get_livetimes(3), l.get_times(3))
-    plt.show()
-    # mpa = MPA('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/beamgun003.mpa')
+    mpa= MPA('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/tuesday/MCA/shot8.mpa')
+    # l = MPANTList('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/jeff002.txt', )
+    # print(l.valid_adcs)
+    # # l.plot_percent_live(adc=3)
+    # plt.plot(l.get_livetimes(3), l.get_times(3))
+    # plt.show()
+    # mpa = MPA('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/MCA/shot124.mpa')
     # # mpa = MPA('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/list_files/jeff002.mpa')
-    # mpa.plot_spectrum(adc=1)
+    # mpa.plot_erg_spectrum()
     # plt.show()
 
     # l.plot_percent_live(adc=2)
     # l.plot_count_rate(bins=100)
     # plt.show()
+    class B:
+        def __init__(self, a=1):
+            self.a = a
+            pass
+
+        @classmethod
+        def factory(cls, a=0):
+            self = cls.__new__(cls)
+            self.a = a
+            return self
+
+    class A:
+        def __new__(cls, *args, **kwargs):
+
+            obs = super().__new__(cls)
+            obs.__init__(*args, **kwargs)
+
+            print(dir(obs))
+            return B.factory(a=obs.a)
+            # print("new: ", args, kwargs)
+            # return cls(*args, **kwargs)
+
+        def __init__(self, a=1, b=2):
+            self.a = a
+            print("init!")
+
+    a = A()
+    print(a)

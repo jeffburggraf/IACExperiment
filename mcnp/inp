@@ -1,0 +1,32 @@
+IAC simulation
+c Cells
+@Cell.get_all_cell_cards()@
+
+c Surfaces
+@Surface.get_all_surface_cards()@
+
+c
+mode e p
+MPHYS ON
+nps 1E9
+CUT:p j 0.1
+CUT:e j 1
+PHYS:P j j j -1 j j 1
+PHYS:n  8j 2
+SDEF
+     par = e
+     Z = @source_ccc.z0+dz/2@
+     X = D1
+     Y = D2
+     vec = 0 0 1
+     dir = 1
+     erg = D3
+     CCC = @source_ccc.cell_number@
+c SI1  0 1
+SP1 -41  @beam_fwhm@ 0
+SP2 -41  @beam_fwhm@ 0
+SP3 -4 1.0 20.75
+@Material.get_all_material_cards()@
+@F4Tally.get_all_tally_cards()@
+PRDMP 2E6 -2
+PRINT 120

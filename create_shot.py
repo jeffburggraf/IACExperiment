@@ -139,12 +139,12 @@ class IACShot:
 
         self.trees[0].Branch("t", br_time, 't/F')
         self.trees[0].Branch("erg", br_energy, 'erg/F')
-        self.trees[0].Branch("eff", br_eff, 'eff/F')
+        self.trees[0].Branch("eff.py", br_eff, 'eff.py/F')
         self.trees[0].Branch('dead_corr', br_dead_corr, 'dead_corr/F')
 
         self.trees[1].Branch("t", br_time, 't/F')
         self.trees[1].Branch("erg", br_energy, 'erg/F')
-        self.trees[1].Branch("eff", br_eff, 'eff/F')
+        self.trees[1].Branch("eff.py", br_eff, 'eff.py/F')
         self.trees[1].Branch('dead_corr', br_dead_corr, 'dead_corr/F')
 
         eff_lists = [self.eff_fits[i].eval(x=self.event_energies[i]) for i in range(2)]
@@ -314,7 +314,7 @@ class IACShot:
     def time_dependence_over_range(self, min_erg, max_erg, det_index, time_bin_edges, eff_correct=True,
                                   ):
         """
-        Returns eff. corrected time dependence in a energy range.
+        Returns eff.py. corrected time dependence in a energy range.
         Args:
             erg: Todo
             det_index: Upstream or downstream detector? (0 or 1)
