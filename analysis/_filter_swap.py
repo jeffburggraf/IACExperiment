@@ -12,6 +12,11 @@ from lmfit.models import ExponentialModel
 
 
 def filter_consistency():
+    """
+    Check that the two filters behave the same. They do.
+    Returns:
+
+    """
     shots1 = [79, 85, 86]
     shots2 = [83, 84]
     ax = None
@@ -22,22 +27,38 @@ def filter_consistency():
         sigs.append(sum(y))
         sigs[-1] = ufloat(sigs[-1], np.sqrt(sigs[-1]))
         if ax is None:
-            ax = mpl_hist(bins, y, color='blue')
+            ax = mpl_hist(bins, y, color='blue', label='Filter 2')
         else:
-            mpl_hist(bins, y, color='blue', ax=ax)
+            mpl_hist(bins, y, color='blue', ax=ax, label='Filter 2')
 
     for shotnum in shots2:
         shot = Shot(shotnum)
         y, _, bins = shot.list.get_time_dependence(218.5)
         sigs.append(sum(y))
         sigs[-1] = ufloat(sigs[-1], np.sqrt(sigs[-1]))
-        mpl_hist(bins, y, color='green', ax=ax)
+        mpl_hist(bins, y, color='red', ax=ax, label='Filter 1')
 
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("counts")
     print(f"Standard Deviation between shots:{100*np.std(unp.nominal_values(sigs))/np.mean(unp.nominal_values(sigs)):.1f}%"
           f" Counting errors: {100*np.mean(unp.std_devs(sigs))/np.mean(unp.nominal_values(sigs)):.1f}%")
 
 
-def hi(center_kev=218.6, window_kev=3, bins=None, max_time=None, debug_plot=False):
+def downstream_upstream(center_kev=218.6, window_kev=3, bins=None, max_time=None, debug_plot=False):
+    """
+    Looks at the time dependence in the second filter (via filter swap method).
+    They are surprisingly the same.
+
+    Args:
+        center_kev:
+        window_kev:
+        bins:
+        max_time:
+        debug_plot:
+
+    Returns:
+
+    """
     shots_upstream = [79, 85, 86]
     shots_downstream = [83, 84]
     # Shot(132).list.plotly(100, 900, time_bin_width=40)
@@ -99,14 +120,19 @@ def hi(center_kev=218.6, window_kev=3, bins=None, max_time=None, debug_plot=Fals
             erg_downstream = spe.get_counts(remove_baseline=True)
         else:
             erg_downstream += spe.get_counts(remove_baseline=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey='all', figsize=(15, 5))
+    ax1.set_ylabel('Counts')
+    ax2.set_ylabel('Counts')
+    ax2.set_xlabel('Time [s]')
+    ax1.set_xlabel('Time [s]')
+    mpl_hist(bins, downstream*sum(upstream)/sum(downstream), label=f'downstream (scaled), shots:{shots_downstream}',
+             ax=ax1)
+    mpl_hist(bins, upstream, label=f'upstream shots:{shots_upstream}', ax=ax1)
+    ax1.set_title(f"Time dependence in upstream/downstream filters at {center_kev} KeV")
 
-    ax = mpl_hist(bins, downstream*sum(upstream)/sum(downstream), label=f'downstream (scaled), shots:{shots_downstream}')
-    mpl_hist(bins, upstream, label=f'upstream shots:{shots_upstream}', ax=ax)
-    ax.set_title(f"Comparison of time dependence in first/seconds filters. {center_kev} KeV")
-
-    ax = mpl_hist(bins, downstream, label='downstream (not normalized)')
-    mpl_hist(bins, upstream, label='upstream', ax=ax)
-    ax.set_title(f"Comparison of rates in first/seconds filters. {center_kev} KeV")
+    mpl_hist(bins, downstream, label='downstream (not scaled)', ax=ax2)
+    mpl_hist(bins, upstream, label='upstream', ax=ax2)
+    ax2.set_title(f"Comparison of rates in upstream/downstream filters at {center_kev} KeV")
 
     ax = mpl_hist(erg_bins, erg_upstream/up_time_tot, label=f'upstream ({up_time_tot:.0f}s)')
     mpl_hist(erg_bins, erg_downstream/down_time_tot, label=f'down stream ({down_time_tot:.0f}s)', ax=ax)
@@ -117,12 +143,10 @@ def hi(center_kev=218.6, window_kev=3, bins=None, max_time=None, debug_plot=Fals
     print(f"Ratio: {sum(downstream)/ sum(upstream)}")
 
 
-bins = np.arange(0, 450, 7)
-hi(center_kev=743, bins=bins, max_time=bins[-1], debug_plot='simple')
-hi(center_kev=229, bins=bins, max_time=bins[-1], debug_plot='simple')
-hi(center_kev=658, bins=bins, max_time=bins[-1], debug_plot='simple')
+filter_consistency()
 
-
+bins = np.arange(0, 200, 2.5)
+downstream_upstream(center_kev=218.5, bins=bins, max_time=bins[-1], debug_plot='simple')
 
 plt.show()
 

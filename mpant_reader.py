@@ -19,7 +19,9 @@ class MPA(SPEFile):
     def __new__(cls, *args, **kwargs) -> SPEFile:
         obj = super(MPA, cls).__new__(cls)
         obj.__init__(*args, **kwargs)
-        spe = SPEFile.build(obj.path, obj._counts[obj.primary_adc_number], obj._erg_coeffs[obj.primary_adc_number],
+        path = (obj.path.parent / f'{obj.path.with_suffix("").name}_mpa').with_suffix('.Spe')
+
+        spe = SPEFile.build(path, obj._counts[obj.primary_adc_number], obj._erg_coeffs[obj.primary_adc_number],
                             obj._real_times[obj.primary_adc_number],
                             obj._real_times[obj.primary_adc_number],
                             system_start_time=obj.system_start_time)

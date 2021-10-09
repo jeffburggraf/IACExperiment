@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from JSB_tools import mpl_hist
 import numpy as np
 
+
 def read_32(f):
     s = calcsize('I')
     _bytes = f.read(s)
@@ -15,7 +16,7 @@ def read_32(f):
 with open('fuck') as f:
    print(sum(map(int, f.readlines())))
 
-with open('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/MCA/shot120.lst', 'rb') as f:
+with open('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/tuesday/MCA/shot2.lst', 'rb') as f:
     s = 0
     pos = None
     while True:
@@ -25,60 +26,56 @@ with open('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/MCA/sh
         except UnicodeDecodeError:
             break
     f.seek(pos)
-    l = {}
-    h = {}
-    adc2_data = []
 
-    waiting4adc2 = False
+    def read_word():
+        byte1 = f.read(1)
+        byte2 = f.read(1)
+        # convert the byte to an integer representation
+        byte1 = ord(byte1)
+        byte2 = ord(byte2)
+        # now convert to string of 1s and 0s
+        byte1 = bin(byte1)[2:].rjust(8, '0')
+        byte2 = bin(byte2)[2:].rjust(8, '0')
+        # now byte contains a string with 0s and 1s
+        return byte2, byte1
 
-    for i in range(3000000
-                   ):
-        b = f.read(2)[::-1]
 
-        # print(unpack('I', b))
-        try:
-            bin_ = f"{unpack('H', b)[0]:016b}"[::-1]
-        except struct.error as e:
-            print(e)
-            break
-        low_word = bin_[:16]
-        high_word = bin_[16:]
-        # print(low_word)
-        # if waiting4adc2:
-            # adc2_data.append(int(b[:16]))
-            # waiting4adc2 = False
+    def hextobin(h):
+        return bin(int(h, 16))[2:].zfill(len(h) * 4)
 
-        if high_word == '1010111100000101':
-            waiting4adc2 = True
+    for i in range(3000000):
 
-        if low_word not in ['1111111111111111', '0000100000000000']:
-            try:
-                l[low_word] += 1
-            except KeyError:
-                l[low_word] = 1
-            # l(int(low_word, 2))
-        if high_word not in ['1111111111111111', '0000000010000000']:
-            try:
-                h[high_word] += 1
-            except KeyError:
-                h[high_word] = 1
-                # print(low_word, high_word)
-            # if :
-        # print(low_word, high_word)
-        if i <100:
-            print(bin_, b.hex())
-            # print(bin_[:len(bin_)//2], bin_[len(bin_)//2:], b[:len(b)//2].hex(), b[len(b)//2:].hex())
-        # print()
-    # print(f.read(2000).decode('ascii'))
-    l = {k: l[k] for k in sorted(l.keys())}
-    h = {k: h[k] for k in sorted(h.keys())}
-    print(h)
-    # plt.bar(range(len(l)), list(l.values()), align='center')
-    # plt.xticks(range(len(l)), list(l.keys()), rotation='vertical')
-    # plt.subplots_adjust(bottom=0.4)
-    # plt.plot(l.values())
-    # plt.plot(h.values())
-    # plt.plot(l)
-    values, bins = np.histogram(adc2_data, bins=np.arange(0, max(adc2_data)))
-    mpl_hist(bins, values, label='adc2_data')
+        # if i < 100:
+        #     print([read_word() for i in range(2)])
+        if i < 100:
+            outh = ""
+            outb = ""
+            for i in range(2):
+                b1 = f.read(1)[::-1]
+                b2 = f.read(1)[::-1]
+                # b1.reverse()
+                # b2.reverse()
+                outh += f" {b2.hex()} {b1.hex()}"
+                outb += f" {hextobin(b2.hex())} {hextobin(b1.hex())}"
+                # print(b2.hex(), b1.hex(), hextobin(b2.hex()), hextobin(b1.hex()))
+                # b = f.read(1)[::-1]
+            print(outh)
+            print(outb)
+            print()
+            # b1 = f.read(1)[::-1]
+            # b2 = f.read(1)[::-1]
+            # b1.reverse()
+            # b2.reverse()
+            # print(b2.hex(), b1.hex(), hextobin(b2.hex()), hextobin(b1.hex()))
+        #
+        # # print(unpack('I', b))
+        # try:
+        #     bin_ = f"{unpack('I', b)[0]:032b}"
+        # except struct.error as e:
+        #     print(e)
+        #     break
+        # low_word = bin_[16:]
+        # high_word = bin_[:16]
+        # if i < 100:
+        #     print(low_word, high_word, b.hex())
 plt.show()
