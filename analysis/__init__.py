@@ -9,7 +9,7 @@ import re
 from openpyxl import load_workbook
 from itertools import count
 import pickle
-from typing import Dict
+from typing import Dict, List
 from matplotlib import pyplot as plt
 from functools import cache, cached_property
 from JSB_tools import mpl_hist
@@ -163,15 +163,18 @@ class Shot:
         return MPA(path)
 
     @staticmethod
-    def find_shots(**attribs):
+    def find_shots(**attribs) -> List[Shot]:
         shots = []
-        for k, v in attribs.items():
+        for shot_num in ALL_SHOTS_METADATA:
+            if shot_num in Shot.bad_shots:
+                continue
+            shot = Shot(shot_num)
             try:
-                value = getattr(self, k)
-            except:
-                pass
-            
-        pass
+                if all([getattr(shot, name) == value for name, value in attribs.items()]):
+                    shots.append(shot)
+            except AttributeError:
+                raise
+        return shots
 
     def __eq__(self, other: Shot):
         assert isinstance(other, Shot)
@@ -195,7 +198,7 @@ class Shot:
         if attribs is None:
             attribs = self.__config_attribs__
         elif attribs == 0:
-            attribs = ['flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
+            attribs = ['shotnum', 'comment', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
 
         for attrib in attribs:
             s = f'{attrib}={getattr(self, attrib)}'
@@ -203,12 +206,11 @@ class Shot:
         return ', '.join(outs)
 
 
-
 ALL_SHOTS_METADATA: Dict[int, dict] = dict()
-ALL_SHOTS: Dict[int, Shot] = dict()
+# ALL_SHOTS: Dict[int, Shot] = dict()
 
 
-def __get_all_shots(load=False):
+def __get_all_shots_data(load=False):
     global ALL_SHOTS_METADATA
     if load:
         with open('excel.pickle', 'rb') as f:
@@ -249,19 +251,27 @@ def __get_all_shots(load=False):
         pickle.dump(ALL_SHOTS_METADATA, f)
 
 
-__get_all_shots(False)
+__get_all_shots_data(False)
 
 if __name__ == '__main__':
-    s = SPEFile('/exp_data/Nickel/Nickel_original.Spe')
-    s.plot_erg_spectrum()
-    shots = list(map(lambda x: Shot(x).list, [26, 27]))
-    ax = None
-    sig, bg, bins = get_merged_time_dependence([Shot(26).list, Shot(27).list], 218.5)
-    mpl_hist(bins, sig)
-    ax = Shot(134).list.plot_erg_spectrum(time_max=60*4, remove_baseline=True)
-    Shot(34).list.plot_erg_spectrum(time_max=60*4, ax=ax, remove_baseline=True)
-
-    plt.show()
+    for s in Shot.find_shots(flow='010010', tube_len=12.64, num_filters=2, cold_filter=False, he_flow=0.5, ar_flow=0.5,
+                             mylar=0, foil_pos='upstream'):
+        print(s)
+    # ax = Shot(56).list.plot_time_dependence(218.5)
+    # Shot(57).list.plot_time_dependence(218.5, ax=ax)
+    # Shot(58).list.plot_time_dependence(218.5, ax=ax)
+    # plt.show()
+    # Shot().tube_len
+    # s = SPEFile('/exp_data/Nickel/Nickel_original.Spe')
+    # s.plot_erg_spectrum()
+    # shots = list(map(lambda x: Shot(x).list, [26, 27]))
+    # ax = None
+    # sig, bg, bins = get_merged_time_dependence([Shot(26).list, Shot(27).list], 218.5)
+    # mpl_hist(bins, sig)
+    # ax = Shot(134).list.plot_erg_spectrum(time_max=60*4, remove_baseline=True)
+    # Shot(34).list.plot_erg_spectrum(time_max=60*4, ax=ax, remove_baseline=True)
+    #
+    # plt.show()
 
 
 
