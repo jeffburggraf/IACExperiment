@@ -16,6 +16,7 @@ from JSB_tools import mpl_hist
 from JSB_tools.spe_reader import SPEFile
 from mpant_reader import MPA
 
+cwd = Path(__file__).parent
 
 
 def time_offset(l: MaestroListFile):
@@ -82,7 +83,7 @@ class Shot:
 
     @staticmethod
     def background_spe():
-        return SPEFile(Path.cwd().parent/'exp_data'/'tuesday'/'BG.Spe')
+        return SPEFile(cwd.parent/'exp_data'/'tuesday'/'BG.Spe')
 
     def __init__(self, shot_num):
         """
@@ -213,7 +214,7 @@ ALL_SHOTS_METADATA: Dict[int, dict] = dict()
 def __get_all_shots_data(load=False):
     global ALL_SHOTS_METADATA
     if load:
-        with open('excel.pickle', 'rb') as f:
+        with open(cwd/'excel.pickle', 'rb') as f:
             ALL_SHOTS_METADATA = pickle.load(f)
             return ALL_SHOTS_METADATA
 
@@ -247,7 +248,8 @@ def __get_all_shots_data(load=False):
         run_num = int(run_num)
         ALL_SHOTS_METADATA[run_num] = shot_metadata
     ALL_SHOTS_METADATA = {shot_num: {k.rstrip().lstrip(): v for k, v in meta.items()}  for shot_num, meta in ALL_SHOTS_METADATA.items()}
-    with open('excel.pickle', 'wb') as f:
+
+    with open(cwd/'excel.pickle', 'wb') as f:
         pickle.dump(ALL_SHOTS_METADATA, f)
 
 

@@ -51,19 +51,19 @@ def sanbox1(llnl=True):
     llnl_cs137.plot_erg_spectrum(make_rate=True)
 
     counts1 = sum(llnl_co57.get_counts(co_57_g1.erg.n - 1.5, co_57_g1.erg.n + 1.5, remove_baseline=True,
-                                       debug_plot=True, deadtime_corr=True))
+                                       debug_plot=True, deadtime_corr=False))
     counts2 = sum(llnl_co57.get_counts(co_57_g2.erg.n - 1.5, co_57_g2.erg.n + 1.5, remove_baseline=True,
-                                       debug_plot=True, deadtime_corr=True))
+                                       debug_plot=True, deadtime_corr=False))
     counts3 = sum(llnl_cs137.get_counts(ba_137m_g1.erg.n - 3.5, ba_137m_g1.erg.n + 2.5, remove_baseline=True,
-                                        debug_plot=True, deadtime_corr=True))
+                                        debug_plot=True, deadtime_corr=False))
     counts4 = sum(llnl_y88.get_counts(y88_g1.erg.n - 4.5, y88_g1.erg.n + 4.5, remove_baseline=True, debug_plot=True,
-                                      deadtime_corr=True))
+                                      deadtime_corr=False))
 
     counts_ni_127 = sum(llnl_ni.get_counts(ni_g127.erg.n - 3.5, ni_g127.erg.n + 3.5, remove_baseline=True,
                                            debug_plot=True, baseline_method='median',
                                            baseline_kwargs={'window_kev': 50}, deadtime_corr=True))
     counts_ni_1377 = sum(llnl_ni.get_counts(ni_g1377.erg.n - 3.5, ni_g1377.erg.n + 3.5, remove_baseline=True,
-                                           debug_plot=True, baseline_method='median', deadtime_corr=True))
+                                            debug_plot=True, baseline_method='median', deadtime_corr=False))
 
     eff1 = counts1/(co57_src.get_n_decays(llnl_co57.livetime) * co_57_g1.intensity)
     eff2 = counts2/(co57_src.get_n_decays(llnl_co57.livetime) * co_57_g2.intensity)

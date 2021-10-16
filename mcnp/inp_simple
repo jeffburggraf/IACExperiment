@@ -9,23 +9,19 @@ c
 mode e p
 MPHYS ON
 nps 1E9
-CUT:p j 4
-CUT:e j 4
+CUT:p j 1
+CUT:e j 1
 PHYS:P j j j -1 j j 1
 c PHYS:n  8j 2
 PHYS:e 13j 0.965
 SDEF
      par = e
-     Z = @source_ccc.z0+dz/2@
-     X = D1
-     Y = D2
+     Z = @dz/2@
+     X = 0
+     Y = 0
      vec = 0 0 1
      dir = 1
-     erg = D3
-     CCC = @source_ccc.cell_number@
-SP1 -41  @beam_fwhm@ 0
-SP2 -41  @beam_fwhm@ 0
-SP3 -4 1.0 20.75
+     erg = 21
 @Material.get_all_material_cards()@
 @F4Tally.get_all_tally_cards()@
 PRDMP 3E5 -2

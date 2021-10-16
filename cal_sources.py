@@ -84,3 +84,4 @@ if __name__ == '__main__':
     for g in n.decay_gamma_lines:
         print(g)
     print(CalSource.get_source(190607000).get_n_decays(1, ))
+    Nuclide.from_symbol('Co59').decay_rate

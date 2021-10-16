@@ -1,0 +1,39 @@
+Effects of Ni foil geom:
+    Going from 0.6 to 0.3 cm radius produced 4E8 and 5.6E8, respectively.
+
+Effects of foil distance:
+    Unperturbed N foil distance:
+        Number of Ni57 activation:
+                 ratio:        3.65+/-0.13                  8.0+/-1.4
+                              Chamber                  Downstream
+                 Model    (4.023+/-0.081)e+08     (9.103+/-1.012)e+06
+            Gamma spec     (1.103+/-0.032)e+08      (1.14+/-0.15)e+06
+
+    Perturbing N foil 0.5 cm closer:
+                 ratio:        4.24+/-0.14                  7.3+/-1.2
+                              Chamber                  Downstream
+                 Model    (4.682+/-0.067)e+08     (8.249+/-0.731)e+06
+        Gamma analysis     (1.103+/-0.032)e+08      (1.14+/-0.15)e+06
+
+    And for 0.5 further:
+        Number of Ni activation:
+                 ratio:        3.13+/-0.10                  6.9+/-1.0
+                              Chamber                  Downstream
+                 Model    (3.456+/-0.034)e+08     (7.820+/-0.420)e+06
+        Gamma analysis     (1.103+/-0.032)e+08      (1.14+/-0.15)e+06
+
+Effects of beam alignment:
+    from centered to 3mm offset: 4.2E8 to 3.15E8 (25 %)
+    (also, gaussian beam vs pencil is 4. -> 3. respectively)
+
+
+Effects of adding chamber shell of 0.5 cm:
+    None
+
+Effects of perturbing Ti location:
+    None
+
+Effects of perturbing energy:
+
+Effect of perturbing e and p energy cut:
+    None
