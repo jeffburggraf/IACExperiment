@@ -96,7 +96,7 @@ class Shot:
         self.he_flow = shot_metadata['He (SLPM)'], CONFIG_ATTRIB
         self.ar_flow = shot_metadata['Ar (SLPM)'], CONFIG_ATTRIB
 
-        tube_len = shot_metadata['Length (Chamber-Filter m)']
+        tube_len = shot_metadata['Tube length (m)']
         try:
             self.tube_len = eval(tube_len.replace('=', '')), CONFIG_ATTRIB
         except AttributeError:

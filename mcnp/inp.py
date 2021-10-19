@@ -21,7 +21,6 @@ chamber_mount_width = 1
 dist2chamber_begin = 15/16*inch
 chamber_target_dist = 1.1  # distance of target in chamber from where chamber *effectively* begins
 chamber_cap_thickness = 1  # thickness of caps that contain Ti window
-# (see dist2chamber_begin).
 
 vcd_lead = 8*inch
 chamber_target_is_nickel = True
@@ -46,16 +45,8 @@ pb_mat = Lead()
 # /---
 
 
-if chamber_target_is_nickel:
-    chamber_target_w = 0.005*inch
-    chamber_target_radius = np.sqrt(0.033/(np.pi*chamber_target_w*nickel_mat.density))
-    # thickness of target in chamber when nickel was the target.
-    # chamber_target_w = 0.033 / (
-    #             np.pi * chamber_target_radius ** 2) / nickel_mat.density
-
-else:
-    chamber_target_radius = 0.5
-    chamber_target_w = 0.05
+chamber_target_w = 0.005*inch
+chamber_target_radius = np.sqrt(0.033/(np.pi*chamber_target_w*nickel_mat.density))
 
 vcd_nickel_dx = 1 * inch
 vcd_nickel_dy = 1.5 * inch
