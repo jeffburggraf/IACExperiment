@@ -56,6 +56,7 @@ def _plot(l, plot_time=True, normalize=False):
     ax_erg.set_xlabel("Energy")
     ax_erg.set_ylabel("Normalized counts")
 
+
 _plot(list([120, 133, 129, 131, 134]),  plot_time=False, normalize=True)
 _plot(list([133, 129, 131, 134]),  plot_time=True, normalize=True)
 # _plot([98, 99, 129, 130])
