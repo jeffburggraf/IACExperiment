@@ -12,7 +12,7 @@ from JSB_tools import Nuclide, FissionYields, convolve_gauss, fill_between
 from lmfit.models import LinearModel
 
 
-flow = 1.0
+flow = 0.5
 first_day = True
 b_width =4
 
@@ -28,11 +28,13 @@ for length in ['long', 'short']:
     warm_ys = []
     cold_ys = []
     ls = line_Styles[length]
+
     for shot_cold, shot_warm in zip(shots_cold[length][flow], shots_warm[length][flow]):
         shot_cold = Shot(shot_cold)
         shot_warm = Shot(shot_warm)
         cold_ys.append(shot_cold.list.get_time_dependence(erg, time_bins, nominal_values=False)[0])
         warm_ys.append(shot_warm.list.get_time_dependence(erg, time_bins, nominal_values=False)[0])
+
     warm_ys = np.mean(warm_ys, axis=0)
     cold_ys = np.mean(cold_ys, axis=0)
 

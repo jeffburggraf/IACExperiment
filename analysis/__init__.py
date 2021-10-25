@@ -190,16 +190,21 @@ class Shot:
         """
 
         Args:
-            attribs: None to print all, 0 to print select information, or a list for custom information.
+            attribs: 'all' to print all shot meta data, 0 to print select information, or a list for custom attributes.
 
         Returns:
 
         """
         outs = []
-        if attribs is None:
+        if attribs == 'all':
             attribs = self.__config_attribs__
         elif attribs == 0:
             attribs = ['shotnum', 'comment', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
+        else:
+            if hasattr(attribs, '__iter__') and all(isinstance(x, str) for x in attribs):
+                pass
+            else:
+                raise ValueError(f'Invalid `attribs` argument,{attribs}')
 
         for attrib in attribs:
             s = f'{attrib}={getattr(self, attrib)}'
