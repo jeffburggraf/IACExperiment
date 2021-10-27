@@ -193,11 +193,11 @@ for dist, labels_dict in effs.items():
     ax.set_ylabel("Efficiency")
 
 
-
 _, fit_axs = plt.subplots(1, 2)
 
 # fig, ax = plt.subplots()
-
+_eval_x = np.linspace(0, 1000, 15)
+_eval_y = []
 for ax, (dist, xy_dist) in zip(fit_axs, xy_points.items()):
     ax.set_title("Log poly fits")
     ax.set_xlabel("Energy [Kev]")
@@ -213,6 +213,7 @@ for ax, (dist, xy_dist) in zip(fit_axs, xy_points.items()):
         pickle.dump(fit_result.fit_result, f)
 
     fit_result.plot_fit(ax=ax)
+    _eval_y.append(fit_result.fit_result.eval(x=_eval_x))
     print(f"Fit report for {dist}")
     print(fit_result.fit_result.fit_report())
     if dist == 15.7:
@@ -221,6 +222,9 @@ for ax, (dist, xy_dist) in zip(fit_axs, xy_points.items()):
         for _x in x:
             print(f'{_x:<10.1f} {fit_result.eval_fit([_x])[0].n:.3e}')
 
+print("Close/far ratio")
+for i in range(len(_eval_x)):
+    print(f'{_eval_x[i]} KeV: {_eval_y[0][i]/_eval_y[1][i]}')
 
 plt.show()
 

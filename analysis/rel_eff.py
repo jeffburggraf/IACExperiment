@@ -33,9 +33,7 @@ llnl_spec = Shot(85).list.build_spe(0, iac_spec.realtime)
 
 x, y = [], []
 #  =======================================
-debug = True
-Shot(85).list.plotly(time_bin_width=25, remove_background=True)
-
+debug = False
 #  =======================================
 
 
@@ -90,16 +88,17 @@ def efficiency_result(x):
                     ufloat(fit.params['b'].value, fit.params['b'].stderr))
 
 
-plt.figure()
-plt.errorbar(x, unp.nominal_values(y), unp.std_devs(y), marker='o', ls='None')
-plt.xlabel("Energy [KeV]")
-plt.ylabel("IAC/LLNL")
-_x = np.arange(40, 2000, 10)
-plt.plot(_x, unp.nominal_values(efficiency_result(_x)), label='Fit')
-plt.legend()
+if __name__ == '__main__':
+    plt.figure()
+    plt.errorbar(x, unp.nominal_values(y), unp.std_devs(y), marker='o', ls='None')
+    plt.xlabel("Energy [KeV]")
+    plt.ylabel("IAC/LLNL")
+    _x = np.arange(40, 2000, 10)
+    plt.plot(_x, unp.nominal_values(efficiency_result(_x)), label='Fit')
+    plt.legend()
 
-ax = iac_spec.plot_erg_spectrum(make_density=True, leg_label='IAC', remove_baseline=True)
-llnl_spec.plot_erg_spectrum(make_density=True, leg_label='LLNL', ax=ax, remove_baseline=True)
-ax.legend()
-# iac_spec.set_efficiency(np.interp(iac_spec.energies, x, unp.nominal_values(y)))
-plt.show()
+    ax = iac_spec.plot_erg_spectrum(make_density=True, leg_label='IAC', remove_baseline=True)
+    llnl_spec.plot_erg_spectrum(make_density=True, leg_label='LLNL', ax=ax, remove_baseline=True)
+    ax.legend()
+    # iac_spec.set_efficiency(np.interp(iac_spec.energies, x, unp.nominal_values(y)))
+    plt.show()

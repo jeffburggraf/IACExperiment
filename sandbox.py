@@ -9,37 +9,26 @@ from lmfit.model import CompositeModel
 import numpy as np
 import pickle
 
-bins = np.linspace(-10 + 3, 10 + 3)
-x = (bins[1:] + bins[:-1])/2
-points = 2*np.random.randn(10000) + 3
-y_gauss, _ = np.histogram(points, bins=bins)
-yerr_gauss = np.sqrt(y_gauss)
-weights = np.where(yerr_gauss > 0, yerr_gauss, 1)
-weights = 1.0/weights
 
-y_lin = (2*x + 5) * np.random.uniform(0.9, 1.1, len(x))
+class Mixin:
+    def __init__(self):
+        pass
 
-model_lin = LinearModel()
-fit_result_lin = model_lin.fit(data=y_lin, x=x)
-fit_result_lin.plot_fit()
+    def f(self):
+        print(self.path)
 
 
-model = GaussianModel()
-params = model.guess(x=x, data=y_gauss, weights=weights)
-fit_result_guass = model.fit(x=x, data=y_gauss, weights=weights)
-
-# plt.errorbar(x, y_gauss, yerr=yerr_gauss)
-with open("test.pickle", 'wb') as f:
-    pickle.dump(fit_result_guass, f)
-    print(type(fit_result_guass))
-#
-# with open("test.pickle", 'rb') as f:
-#     fit_result = pickle.load(f)
-# plt.figure()
-# fit_result.plot_fit()
+class A(Mixin):
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
 
 
-plt.show()
+a = A('omg')
+a.f()
+
+
+
 
 
 
