@@ -85,12 +85,13 @@ class Shot:
     def background_spe():
         return SPEFile(cwd.parent/'exp_data'/'tuesday'/'BG.Spe')
 
-    def __init__(self, shot_num):
+    def __init__(self, shot_num, load_erg_cal=True):
         """
 
         """
         self.__config_attribs__ = []
         shot_metadata = ALL_SHOTS_METADATA[shot_num]
+        self.load_erg_cal = load_erg_cal
 
         self.flow = shot_metadata['flow'], CONFIG_ATTRIB
         self.he_flow = shot_metadata['He (SLPM)'], CONFIG_ATTRIB
@@ -144,11 +145,12 @@ class Shot:
         except KeyError:
             raise FileNotFoundError(f"No shot {self.shotnum}")
         try:
-            out = MaestroListFile.from_pickle(path)
+            out = MaestroListFile.from_pickle(path, load_erg_cal=self.load_erg_cal)
         except FileNotFoundError:
-            out = MaestroListFile(path)
+            out = MaestroListFile(path, load_erg_cal=self.load_erg_cal)
             out.pickle()
         time_offset(out)
+        out.allow_pickle = False
         return out
 
     @property

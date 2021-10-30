@@ -12,7 +12,7 @@ from analysis.rel_eff import fit as iac_rel_fit
 
 
 # / ===========
-pickle_llnl = False
+pickle_llnl = True
 pickle_iac = True
 #  ==============================
 pickle_path = Path(__file__).parent/'3_17mm.pickle'
@@ -23,21 +23,33 @@ with open(pickle_path, 'rb') as f:
 iac_shots = _get_mpant_mca_shot_paths()
 
 for shot, p in _get_maesto_list_shot_paths().items():
-    if pickle_llnl:
-        list_file = MaestroListFile(p)
-        list_file.set_useful_energy_range(40)
-        list_file.eff_model = llnl_model
-    else:
-        list_file = MaestroListFile.from_pickle(p)
+    if shot < 119:
+        continue
+    print(shot)
+
+    # if pickle_llnl:
+    #     list_file = MaestroListFile(p)
+    #     list_file.set_useful_energy_range(40)
+    #     list_file.eff_model = llnl_model
+    #     if 124 <= shot <= 134:  # account for 1 cm added distance
+    #         list_file.eff_scale = 0.86
+    # else:
+    list_file = MaestroListFile.from_pickle(p, load_erg_cal=False)
+    list_file.set_useful_energy_range(40)
+    list_file.eff_model = llnl_model
+    if 124 <= shot <= 134:  # account for 1 cm added distance
+        list_file.eff_scale = 0.86
 
     if pickle_llnl:
         list_file.pickle()
 
     if shot in iac_shots:
         iac_spe = MPA(iac_shots[shot])
+        iac_spe.set_useful_energy_range(40)
         iac_spe.effs = list_file.interp_eff(iac_spe.energies)*\
                        unp.uarray(iac_rel_fit.eval(x=iac_spe.energies), iac_rel_fit.eval_uncertainty(x=iac_spe.energies))
+        iac_spe.pickle_eff()
+        # plt.show()
     else:
         continue
-    print()
     #  MaestroListFile.from_pickle(p)

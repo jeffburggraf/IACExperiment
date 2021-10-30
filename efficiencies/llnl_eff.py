@@ -26,7 +26,7 @@ def recal(spe: SPEFile, nuclide_name, intensity_thresh=0.03):
     return np.polyfit(peak_channels, true_ergs, deg=2)[::-1]
 
 
-erg_cal = recal(SPEFile('/Users/burggraf1/PycharmProjects/IACExperiment/LLNL_eff/data/20211019-1723170-GEM20P4-70, 61-TP24472A.Spe'), 'Eu152')
+erg_cal = recal(SPEFile('/efficiencies/data/20211019-1723170-GEM20P4-70, 61-TP24472A.Spe'), 'Eu152')
 
 data_path = Path(__file__).parent/'data'
 

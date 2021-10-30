@@ -48,7 +48,7 @@ if __name__ == '__main__':
     times, files = [], []
     for path in get_maesto_list_shot_paths().values():
         # m = MaestroListFile(path)
-        m = MaestroListFile(path)
+        m = MaestroListFile(path, load_erg_cal=False)
         t = m.total_realtime
         i = np.searchsorted(-np.array(times), -t)
         times.insert(i, t)
