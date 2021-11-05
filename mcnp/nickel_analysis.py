@@ -56,7 +56,7 @@ def get_ni57_xs(ni58_bool):
     x_interp = outs[np.argmax(list(map(lambda x: len(x[0]), outs)))][0]
     out = np.sum([np.interp(x_interp, x, y) for x, y in outs], axis=0)
 
-    return CrossSection1D(x_interp, out, 'Ni58(G,N) -> Ni57', 'gamma')
+    return CrossSection1D(x_interp, out, 'Ni58(G,N) -> Ni57' if not ni58_bool else "Ni62(G,P) -> Co61", 'gamma')
 
 
 def get_ni57_xs_2():
@@ -87,53 +87,60 @@ n_electrons = 20*c_per_second / charge_per_electron
 ni58 = Nuclide.from_symbol('Ni58')
 co61 = Nuclide.from_symbol('Co61')
 ni57 = Nuclide.from_symbol("Ni57")
+ni62 = Nuclide.from_symbol("Ni62")
 u238 = Nuclide.from_symbol('U238')
 fiss_xs = u238.gamma_induced_fiss_xs
 
 nickel_spe_chamber = SPEFile(Path.cwd().parent/'exp_data/Nickel/Nickel.Spe')
+nickel_spe_chamber.unpickle_eff()
 nickel_spe_vcd: SPEFile = MPA(Path.cwd().parent/'exp_data/Nickel/Nickel.mpa')
+nickel_spe_vcd.unpickle_eff()
 
 
-def get_obs_nickel57(gamma_line, spe_file, window, efficiency):
+def get_obs_activation(nuclide: Nuclide, gamma_line, spe_file, window):
     # gamma_line = ni57.decay_gamma_lines[gamma_line_index]
     gamma_i = gamma_line.intensity
     g_erg = gamma_line.erg.n
     # n_gamma_counts = sum(spe_file.get_counts(g_erg-window/2, g_erg+window/2, remove_baseline=False))
     n_gamma_counts, bins = spe_file.get_counts(g_erg-window/2, g_erg+window/2, remove_baseline=True,
                                                return_bin_edges=True, deadtime_corr=True, debug_plot=True,
-                                               baseline_method='median', baseline_kwargs={'window_kev': 40})
+                                               baseline_method='median', baseline_kwargs={'window_kev': 40},
+                                               eff_corr=True)
     # n_gamma_counts -= spe_file.deadtime_corr*spe_file.get_baseline_median(g_erg - window / 2, g_erg + window / 2,
     #                                                                       window_kev=30)
     # mpl_hist(bins, n_gamma_counts, title='Bg removed counts. ')
     n_gamma_counts = np.sum(n_gamma_counts)
-    frac_decayed_corr = 1.0/(1-0.5**(spe_file.realtime/ni57.half_life))
-    n_ni57 = frac_decayed_corr * n_gamma_counts / gamma_i / efficiency
+    frac_decayed_corr = 1.0/(1-0.5**(spe_file.realtime/nuclide.half_life))
+    n_ni57 = frac_decayed_corr * n_gamma_counts / gamma_i
     print('Deadtime corr:', spe_file.deadtime_corr, gamma_i)
     return n_ni57
 
 
 #  Input efficiency here
-ni57_gammaline = ni57.decay_gamma_lines[1]
+ni57_gammaline = ni57.decay_gamma_lines[0]
 co61_gammaline = co61.decay_gamma_lines[0]
-true_ni_chamber = get_obs_nickel57(ni57_gammaline, nickel_spe_chamber, 4, 0.2625*ufloat(1, 0.0032))
-true_co_chamber = get_obs_nickel57(co61_gammaline, nickel_spe_chamber, 4, 0.05*ufloat(1, 0.0032))
+true_ni_chamber = get_obs_activation(ni57, ni57_gammaline, nickel_spe_chamber, 4)
+true_co_chamber = get_obs_activation(co61, co61_gammaline, nickel_spe_chamber, 4)
 #  0.028*ufloat(1, 0.15)
 # true_ni_vcd = get_obs_nickel57(1, nickel_spe_vcd, 4, 0.163*ufloat(1, 0.004))
-true_ni_vcd = get_obs_nickel57(ni57_gammaline, nickel_spe_vcd, 8, 0.17*ufloat(1, 0.005))
+true_ni_vcd = get_obs_activation(ni57, ni57_gammaline, nickel_spe_vcd, 8)
 
 
 nickel_spe_chamber.plot_erg_spectrum()
-ni58_xs = get_ni57_xs(True)
-ni62_xs = get_ni57_xs(False)
-ni58_xs.plot()
-ni62_xs.plot()
+# ni58_xs = get_ni57_xs(True)
+ni58_xs = ni58.get_incident_gamma_daughters()['Ni57'].xs
+# ni62_xs = get_ni57_xs(False)
+ni62_xs = ni62.get_incident_gamma_daughters()['Co61'].xs
+ax = ni58_xs.plot()
+ni62_xs.plot(ax=ax)
 
 out = OutP(Path.cwd()/'sims'/'0_inp'/'outp')
+outp_du = OutP(Path.cwd()/'sims'/'1_inp'/'outp')
 
 out.get_tally('VCD nickel')
 tally_chamber = out.get_tally('Chamber target')  # out.get_cell_by_name('Chamber target').get_tally()
 vcd_ni_tally = out.get_tally('VCD nickel')
-vcd_cell_tally = out.get_tally('VCD cell')
+vcd_cell_tally = outp_du.get_tally('VCD cell')
 src_verify_tally = out.get_tally('Source tally')
 
 
@@ -141,7 +148,7 @@ src_verify_tally = out.get_tally('Source tally')
 ni_per_src_chamber = np.sum(tally_chamber.dx_per_src * ni58_xs.interp(tally_chamber.energies)) * \
                      (0.68*tally_chamber.cell.atom_density)
 co61_per_src_chamber = np.sum(tally_chamber.dx_per_src * ni62_xs.interp(tally_chamber.energies)) * \
-                     (0.68*tally_chamber.cell.atom_density)
+                     (0.0363*tally_chamber.cell.atom_density)
 ni_per_src_vcd = np.sum(vcd_ni_tally.dx_per_src * ni58_xs.interp(vcd_ni_tally.energies)) * \
                  (0.68*vcd_ni_tally.cell.atom_density)
 
@@ -153,20 +160,24 @@ tot_ni_vcd_mcnp = n_electrons * ni_per_src_vcd
 tally_chamber.plot(norm=n_electrons*3/20*np.pi*chamber_target.radius**2, track_length=False)
 vcd_ni_tally.plot(norm=n_electrons*3/20*(vcd_nickel.cross_section_area('z')), track_length=False)
 
+
+
+print("Erg [MeV] ; Flux [1/cm2] ; flux_err")
+for e, f in zip(vcd_cell_tally.energies, vcd_cell_tally.fluxes):
+    try:
+        err = abs(1-(true_ni_vcd/tot_ni_vcd_mcnp).n)
+        err = ufloat(1, err)
+        f *= n_electrons*3/20*true_ni_chamber / tot_ni_chamber_mcnp*err
+    except ZeroDivisionError:
+        pass
+    print(f"{e:.2e}, {f.n:.2e}, {f.std_dev:.2e}")
+
 if tot_ni_vcd_mcnp != 0:
-    ax = vcd_cell_tally.plot(norm=n_electrons * 3 / 20 * true_ni_chamber / tot_ni_chamber_mcnp * ufloat(1, 0.0), track_length=False,
+    ax = vcd_cell_tally.plot(norm=n_electrons * 3 / 20 * true_ni_chamber / tot_ni_chamber_mcnp * err, track_length=False,
                              ylabel='Gamma flux [1/cm^2]')
 
 src_verify_tally.plot(track_length=False)
 
-
-print("Erg [MeV] ; Flux ; flux_err")
-for e, f in zip(vcd_cell_tally.energies, vcd_cell_tally.fluxes):
-    try:
-        f *= n_electrons*3/20*true_ni_vcd/tot_ni_vcd_mcnp*ufloat(1, 0.35)
-    except ZeroDivisionError:
-        pass
-    print(f"{e:.2e}, {f.n:.2e}, {f.std_dev:.2e}")
 # ax.sey_ylabel("Particles/")
 
 

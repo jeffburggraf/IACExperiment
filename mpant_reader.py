@@ -15,28 +15,34 @@ class MPA(SPEFile):
     """
     Builds an SPEFile class from the MPA data and returns an instance of that class.
     """
+    @classmethod
+    def from_pickle(cls, f_path) -> SPEFile:
+        path = (f_path.parent / f'{f_path.with_suffix("").name}_mpa').with_suffix('.Spe')
+        return SPEFile.from_pickle(path)
+
     def __new__(cls, *args, **kwargs) -> SPEFile:
         self = super(MPA, cls).__new__(cls)
         self.__init__(*args, **kwargs)
-        path = (self.path.parent / f'{self.path.with_suffix("").name}_mpa').with_suffix('.Spe')
-        spe = cls.build(path=path,
+        # path = (self.path.parent / f'{self.path.with_suffix("").name}_mpa').with_suffix('.Spe')
+        spe = cls.build(path=self.path,
                         counts=self.mpa_counts[self.primary_adc_number],
                         erg_calibration=self.mpa_erg_coeffs[self.primary_adc_number],
                         livetime=self.mpa_live_times[self.primary_adc_number],
                         realtime=self.mpa_real_times[self.primary_adc_number],
                         channels=self.mpa_channels[self.primary_adc_number],
                         system_start_time=self.system_start_time,
+                        load_eff_cal=False
                         )
-        # self.unpickle_eff()
         return spe
 
-    def __init__(self, path, primary_adc_number=1, aux_adc_number=3):
+    def __init__(self, mca_path, primary_adc_number=1, aux_adc_number=3):
         assert primary_adc_number > 0, '<=0 is not a valid ADC index'
         assert aux_adc_number > 0, '<=0 is not a valid ADC index'
-        self.path = Path(path)
+        mca_path = Path(mca_path)
+        self.path = (mca_path.parent / f'{mca_path.with_suffix("").name}_mpa').with_suffix('.Spe')
         self.primary_adc_number = primary_adc_number
         self.aux_adc_number = aux_adc_number
-        with open(path) as f:
+        with open(mca_path) as f:
             lines = f.readlines()
         header = lines[:lines.index("[DATA0,8192 ]\n")]
         adc_headers = {}
@@ -85,7 +91,7 @@ class MPA(SPEFile):
 
         self.mpa_counts = {adc_number: unp.uarray(c, np.sqrt(c)) for adc_number, c in counts.items()}
 
-        self.mpa_channels = {adc_number: np.arange(0, adc_dict['range']) for adc_number, adc_dict in adc_headers_dict.items()}
+        self.mpa_channels = {adc_number: np.arange(0, adc_dict['range'], dtype=int) for adc_number, adc_dict in adc_headers_dict.items()}
 
         channels_bins = {adc_number: np.arange(0, adc_dict['range']+1)-0.5 for adc_number, adc_dict in adc_headers_dict.items()}
 

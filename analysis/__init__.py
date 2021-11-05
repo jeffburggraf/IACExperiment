@@ -97,6 +97,11 @@ class Shot:
         self.he_flow = shot_metadata['He (SLPM)'], CONFIG_ATTRIB
         self.ar_flow = shot_metadata['Ar (SLPM)'], CONFIG_ATTRIB
 
+        try:
+            self.pressure = shot_metadata['P (psai)']/14.5
+        except TypeError:
+            self.pressure = 0
+
         tube_len = shot_metadata['Tube length (m)']
         try:
             self.tube_len = eval(tube_len.replace('=', '')), CONFIG_ATTRIB
@@ -147,7 +152,7 @@ class Shot:
         try:
             out = MaestroListFile.from_pickle(path, load_erg_cal=self.load_erg_cal)
         except FileNotFoundError:
-            out = MaestroListFile(path, load_erg_cal=self.load_erg_cal)
+            out = MaestroListFile(path)
             out.pickle()
         time_offset(out)
         out.allow_pickle = False
@@ -163,7 +168,11 @@ class Shot:
             path = _get_mpant_mca_shot_paths()[self.shotnum]
         except KeyError:
             raise FileNotFoundError(f"No shot {self.shotnum}.mpa")
-        return MPA(path)
+        try:
+            out = MPA.from_pickle(path)
+        except FileNotFoundError:
+            out = MPA(path)
+        return out
 
     @staticmethod
     def find_shots(**attribs) -> List[Shot]:

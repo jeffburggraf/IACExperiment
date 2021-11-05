@@ -152,7 +152,7 @@ if __name__ == '__main__':
     inp = InputDeck.mcnp_input_deck(Path.cwd()/'inp', new_file_dir=Path.cwd()/'sims')
     inp.write_inp_in_scope(globals())
 
-    chamber_target.set_dz(0.05 - 20*units.um, fix_max=True)
+    chamber_target.set_dz(0.5/10 - 20*units.um, fix_max=True)
     chamber_target.radius = 0.5
     chamber_target.material = du_mat
     active_target_down = RightCylinder(0.5, material=du_mat, importance=imp, z0=chamber_target.z1,

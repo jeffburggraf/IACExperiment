@@ -9,23 +9,10 @@ from lmfit.model import CompositeModel
 import numpy as np
 import pickle
 
-
-class Mixin:
-    def __init__(self):
-        pass
-
-    def f(self):
-        print(self.path)
-
-
-class A(Mixin):
-    def __init__(self, path):
-        super().__init__()
-        self.path = path
-
-
-a = A('omg')
-a.f()
+from analysis import Shot
+from FFStopping import GetPoints
+for shot in Shot.find_shots(foil_pos='upstream', beam_duration=3):
+    print(shot.shotnum)
 
 
 
