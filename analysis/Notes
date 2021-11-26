@@ -3,6 +3,9 @@ Things we should have done
 - [ ] Cold filter test with different flow patterns
 
 
+Mist
+- [ ] When using pure Argon in a cold filter, the observed decay rate of Xe139 was half of it's true value, but only when using pure Argon.
+
 Observed FFs (bold means likely):
 - [ ] Ba121 @ 110, 210, and 99 KeV (hl 30 s) (maybe)
 - [ ] Kr-90 @ 121, 1118.69  KeV

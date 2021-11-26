@@ -360,9 +360,9 @@ def temp(shot1, shot2, color, title):
 # temp(35434, 35436, 'green', title='PJ-x 2; BL; Energy (J): 500 J')
 
 #  ('Pulse (ps)', 10), ('Energy (J)', 900), ('Thick. (um)', varies))
-# temp(35431, None, 'blue', title='PJ-X 2; Energy (J): 900 J')
-# temp(35433, 35440, 'red', title='PJ-X 2; Energy (J): 900 J')
-# temp(35435, 35437, 'green', title='PJ-X 2; Energy (J): 900 J')
+temp(35431, None, 'blue', title='PJ-X 2; Energy (J): 900 J')
+temp(35433, 35440, 'red', title='PJ-X 2; Energy (J): 900 J')
+temp(35435, 35437, 'green', title='PJ-X 2; Energy (J): 900 J')
 
 
 #  ('Pulse (ps)', 10), ('Energy (J)', 900), ('Thick. (um)', varies))

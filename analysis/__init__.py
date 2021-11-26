@@ -272,24 +272,38 @@ def __get_all_shots_data(load=False):
 __get_all_shots_data(False)
 
 if __name__ == '__main__':
-    for s in Shot.find_shots(flow='010010', tube_len=12.64, num_filters=2, cold_filter=False, he_flow=0.5, ar_flow=0.5,
-                             mylar=0, foil_pos='upstream'):
-        print(s)
-    # ax = Shot(56).list.plot_time_dependence(218.5)
-    # Shot(57).list.plot_time_dependence(218.5, ax=ax)
-    # Shot(58).list.plot_time_dependence(218.5, ax=ax)
-    # plt.show()
-    # Shot().tube_len
-    # s = SPEFile('/exp_data/Nickel/Nickel_original.Spe')
-    # s.plot_erg_spectrum()
-    # shots = list(map(lambda x: Shot(x).list, [26, 27]))
-    # ax = None
-    # sig, bg, bins = get_merged_time_dependence([Shot(26).list, Shot(27).list], 218.5)
-    # mpl_hist(bins, sig)
-    # ax = Shot(134).list.plot_erg_spectrum(time_max=60*4, remove_baseline=True)
-    # Shot(34).list.plot_erg_spectrum(time_max=60*4, ax=ax, remove_baseline=True)
-    #
-    # plt.show()
+    from lmfit.models import ExponentialModel
+    import uncertainties.unumpy as unp
+    s = None
+    for shot in range(134, 135):
+        list_ = Shot(shot).list
+        if s is None:
+            s = list_
+        else:
+            s += list_
+        print(list_.times[-1])
+    t_bins = np.linspace(0, s.times[-1], 40)
+    sig, _, bins =s.get_time_dependence(221.3, t_bins, signal_window_kev=1.5, debug_plot=True)
+    b_centers = 0.5*(bins[1:] + bins[:-1])
+    slice_ = slice(np.argmax(sig), None)
+    sig = sig[slice_]
+    b_centers = b_centers[slice_]
+
+    y = unp.nominal_values(sig)
+    weights = np.where(unp.std_devs(sig) != 0, unp.std_devs(sig), 1)
+    weights = 1.0/weights
+
+    model = ExponentialModel()
+    params = model.guess(x=b_centers, data=y)
+    fit_result = model.fit(data=y, x=b_centers, weights=weights, params=params)
+    fit_result.plot_fit()
+    print(fit_result.fit_report())
+
+    plt.show()
+    # time_dp = s.get_time_dependence(221.3,t_bins,)
+
+    # s.plotly(remove_baseline=True)
+
 
 
 

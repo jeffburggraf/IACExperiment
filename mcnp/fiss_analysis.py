@@ -6,7 +6,7 @@ Thoughts Nov 1:
 
 """
 import warnings
-from JSB_tools.nuke_data_tools import Nuclide, decay_nuclide
+from JSB_tools.nuke_data_tools import Nuclide, DecayedFissionYields
 from matplotlib import pyplot as plt
 from pathlib import Path
 from JSB_tools.MCNP_helper.outp_reader import OutP
@@ -18,6 +18,7 @@ from uncertainties import ufloat
 from analysis import Shot
 from JSB_tools.nuke_data_tools import FissionYields
 from stopping_powers import get_fraction
+from lmfit.model import Model
 
 c_per_second = (192/3.0)*1E-6
 charge_per_electron = 1.602E-19
@@ -25,10 +26,10 @@ n_electrons = 3*c_per_second / charge_per_electron
 
 #  ======================================================
 model_correction = 1.0/1.5
-nuclide = 'Sb132'  # Kr89, Sb132, Sr94
+nuclide = 'Xe139'  # Kr89, Sb132, Sr94
 shot_num = 134
-suppress_upstream = True
-do_decay_corr = True
+suppress_upstream = True  # Do or don't include FF's which escape from upstream of foil
+do_decay_corr = False
 assume_trans_time = 20
 gamma_index = 0
 
@@ -43,13 +44,17 @@ ni_meas_scale = n_electrons * model_correction
 ff = Nuclide.from_symbol(nuclide)
 
 
+def decay_model(x, time_shift, scale, lambda_):
+    return scale*np.e**(-(x-time_shift)*lambda_)*lambda_
+
+
 if do_decay_corr:
     max_time = shot.max_time
 
     if isinstance(assume_trans_time, (float, int)):
         rise_time = assume_trans_time
     else:
-        time_dep, _ , time_bins = shot.list.get_time_dependence(ff.decay_gamma_lines[0].erg.n, debug_plot='simple',
+        time_dep, _, time_bins = shot.list.get_time_dependence(ff.decay_gamma_lines[0].erg.n, debug_plot='simple',
                                                                 signal_window_kev=1.5)
         shot.list.plot_time_dependence(ff.decay_gamma_lines[0].erg.n, signal_window_kev=1.5)
         rise_time = 0.5*(time_bins[1:] + time_bins[:-1])[np.where(time_dep > 0.5*max(time_dep))[0][0]]
@@ -98,6 +103,7 @@ u238 = Nuclide.from_symbol('U238')
 # u238.gamma_induced_fiss_xs.plot()
 yields = FissionYields('U238', 'gamma', tally_down.energies, independent_bool=True)
 # yields.plot(nuclide)
+
 ff_yield = np.average(yields.get_yield(nuclide), weights=tally_down.nominal_fluxes)
 
 
