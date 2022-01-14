@@ -6,7 +6,7 @@ Thoughts Nov 1:
 
 """
 import warnings
-from JSB_tools.nuke_data_tools import Nuclide, DecayedFissionYields
+from JSB_tools.nuke_data_tools import Nuclide, DecayedFissionYields, decay_nuclide
 from matplotlib import pyplot as plt
 from pathlib import Path
 from JSB_tools.MCNP_helper.outp_reader import OutP
@@ -25,8 +25,9 @@ charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 #  ======================================================
-model_correction = 1.0/1.5
-nuclide = 'Xe139'  # Kr89, Sb132, Sr94
+model_correction = 0.5*(ufloat(1.51, 0.05) + ufloat(1.04, 0.05))  # from Ni activation model_avg/meas (average of close and far Ni)
+# model_correction = 1.0/1.5
+nuclide = 'Sr94'  # Kr89, Sb132, Sr94
 shot_num = 134
 suppress_upstream = True  # Do or don't include FF's which escape from upstream of foil
 do_decay_corr = False
@@ -39,7 +40,7 @@ shot = Shot(shot_num)
 # shot.list.plotly(remove_baseline=True)
 
 
-ni_meas_scale = n_electrons * model_correction
+ni_meas_scale = n_electrons / model_correction
 
 ff = Nuclide.from_symbol(nuclide)
 
@@ -90,9 +91,9 @@ n_ff_meas *= decay_corr
 
 # shot.llnl_spe.plot_erg_spectrum()
 
-outp = OutP(Path(__file__).parent/'sims'/'1_inp'/'outp')
-tally_up = outp.get_tally('Active up')
-tally_down = outp.get_tally('Active down')
+outp = OutP(Path(__file__).parent/'sims'/'du'/'outp')
+tally_up = outp.get_f4_tally('Active up')
+tally_down = outp.get_f4_tally('Active down')
 # tally_down.plot()
 # tally_up.plot()
 
@@ -104,11 +105,12 @@ u238 = Nuclide.from_symbol('U238')
 yields = FissionYields('U238', 'gamma', tally_down.energies, independent_bool=True)
 # yields.plot(nuclide)
 
-ff_yield = np.average(yields.get_yield(nuclide), weights=tally_down.nominal_fluxes)
+ff_yield = np.average(yields.get_yield(nuclide),
+                      weights=tally_down.nominal_fluxes*u238.gamma_induced_fiss_xs.interp(tally_down.energies))
 
 
 print('Atom density: ', atom_density)
-print(f'{nuclide} cumulative yield: ', ff_yield)
+print(f'{nuclide} independent yield: ', ff_yield)
 
 # plt.plot(tally_down.energies, u238.gamma_induced_fiss_xs.interp(tally_down.energies))
 
@@ -120,11 +122,31 @@ fraction_escape_up, fraction_escape_down = get_fraction(Shot(134), dedx_sub_nucl
 
 print(f"fraction_escape_up: {fraction_escape_up}    fraction_escape_down: {fraction_escape_down}")
 
+u238.gamma_induced_fiss_xs.plot()
 fiss_rate_down = np.sum(u238.gamma_induced_fiss_xs.interp(tally_down.energies)*tally_down.dx_per_src*atom_density)
 fiss_rate_up = np.sum(u238.gamma_induced_fiss_xs.interp(tally_up.energies)*tally_up.dx_per_src*atom_density)
 
 n_fiss_down = ni_meas_scale * fiss_rate_down
 n_fiss_up = ni_meas_scale * fiss_rate_up
+
+decay_times = np.linspace(0, ff.half_life.n*4)
+y_0 = ff_yield.n*decay_nuclide(ff.name, False)(decay_times)[nuclide]
+y = y_0.copy()
+# print('Decay parents: ', [_.name for _ in ff.get_decay_parents()])
+
+for parent in ff.get_decay_parents():
+    decay_sol = decay_nuclide(parent.name, False, )
+    __yield = np.average(yields.get_yield(parent.name),
+                         weights=u238.gamma_induced_fiss_xs.interp(tally_down.energies)*tally_down.nominal_fluxes)
+    __yield = unp.nominal_values(__yield)
+    print(f"Parent: {parent}, yield: {__yield}")
+    y += __yield*decay_sol(decay_times, True)[ff.name]
+
+plt.figure()
+plt.plot(decay_times, y, label='Not pure')
+plt.plot(decay_times, y_0, label='pure')
+plt.legend()
+
 
 if suppress_upstream:
     n_fiss_up *= 0

@@ -39,7 +39,8 @@ steel_mat = StainlessSteel()
 al_mat = Aluminum()
 air_mat = Air()
 ti_mat = Titanium()
-gas_mat = Material.gas(['He', 'Ar'], atom_fractions=[0.5, 0.5], pressure=1.16, mat_name='He_Ar')
+gas_mat_ni = Material.gas(['Ar'], atom_fractions=[0.5], pressure=1, mat_name='Ar_STP')
+gas_mat_du = Material.gas(['Ar'], atom_fractions=[0.5], pressure=1.4, mat_name='Ar_1.4')
 nickel_mat = Nickel()
 pb_mat = Lead()
 # /---
@@ -72,7 +73,7 @@ beam_ti_window = RightCylinder(radius=1, z0=source_ccc.z1, dz=20*units.um, mater
 
 # ========================= BEGIN CHAMBER GEOM =========================
 #  Chamber begins whee Ti begins
-chamber = RightCylinder(2, z0=dist2chamber_begin, dz=eff_chamber_length, material=gas_mat, importance=imp,
+chamber = RightCylinder(2, z0=dist2chamber_begin, dz=eff_chamber_length, material=gas_mat_ni, importance=imp,
                         cell_name='Chamber (gas)')
 chamber_shell = RightCylinder(2 + 0.5, material=al_mat, importance=imp, z0=chamber.z0, dz=chamber.dz,
                               cell_name='Chamber shell')
@@ -143,30 +144,40 @@ tally_vcd_cell.set_erg_bins(0.1, 10, 15)
 tally_src_verify = F4Tally(source_ccc, particle='e', tally_name='Source tally')
 tally_src_verify.set_erg_bins(15, 30, 50)
 
-CylFMESH('p', rmaxs=(2, room_w), axis_lengths=(10, Surface.global_zmax()), rbins=(15, 35), axis_bins=(60, 50),
-         origin=(0, 0, source_ccc.z0))
-CylFMESH('e', rmaxs=(2, room_w), axis_lengths=(10, Surface.global_zmax()), rbins=(15, 35), axis_bins=(60, 50),
-         origin=(0, 0, source_ccc.z0))
+#  MESH tallies cause SEG faults?
+# CylFMESH('p', rmaxs=(2, room_w), axis_lengths=(10, Surface.global_zmax()), rbins=(15, 35), axis_bins=(60, 50),
+#          origin=(0, 0, source_ccc.z0))
+# CylFMESH('e', rmaxs=(2, room_w), axis_lengths=(10, Surface.global_zmax()), rbins=(15, 35), axis_bins=(60, 50),
+#          origin=(0, 0, source_ccc.z0))
 
 if __name__ == '__main__':
     inp = InputDeck.mcnp_input_deck(Path.cwd()/'inp', new_file_dir=Path.cwd()/'sims')
-    inp.write_inp_in_scope(globals())
 
-    chamber_target.set_dz(0.5/10 - 20*units.um, fix_max=True)
+    # for nickel target
+    inp.write_inp_in_scope(globals(), 'nickel')
+
+    # below is for fission sim with DU target
+    du_thickness = 0.5/10  # in cm
+
+    chamber.material = gas_mat_du
+    chamber_target.z0 = chamber_target.z0
+    chamber_target.dz = du_thickness - 20*units.um
     chamber_target.radius = 0.5
     chamber_target.material = du_mat
+    chamber_target.cell_name = f"{chamber_target.cell_name} (DU)"
+
     active_target_down = RightCylinder(0.5, material=du_mat, importance=imp, z0=chamber_target.z1,
                                        dz=10*units.um, cell_name='Active target down')
     active_target_up = RightCylinder(0.5, material=du_mat, importance=imp, z0=chamber_target.z0,
                                      dz=-10 * units.um, cell_name='Active target up')
     chamber.geometry = chamber.geometry & ~active_target_up & ~active_target_down
     tally_active_down = F4Tally(active_target_down, particle='p', tally_name='Active down')
-    tally_active_down.set_erg_bins(4, 22, 14)
+    tally_active_down.set_erg_bins(4, 22, 20)
 
     tally_active_up = F4Tally(active_target_up, particle='p', tally_name='Active up')
-    tally_active_up.set_erg_bins(4, 22, 14)
+    tally_active_up.set_erg_bins(4, 22, 20)
 
-    inp.write_inp_in_scope(globals())
+    inp.write_inp_in_scope(globals(), 'du')
 
 
 

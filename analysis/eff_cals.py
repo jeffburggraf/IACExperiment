@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import uncertainties.unumpy as unp
 from typing import Union
 from JSB_tools import Nuclide, mpl_hist, shade_plot
-from cal_data.cal_sources import CalSource
+from cal_sources import CalSource
 data_dir = Path(__file__).parent.parent/'exp_data'
 from JSB_tools.regression import LogPolyFit
 

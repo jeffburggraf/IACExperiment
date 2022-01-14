@@ -84,6 +84,7 @@ c_per_second = (192/3.0)*1E-6
 charge_per_electron = 1.602E-19
 n_electrons = 20*c_per_second / charge_per_electron
 
+
 ni58 = Nuclide.from_symbol('Ni58')
 co61 = Nuclide.from_symbol('Co61')
 ni57 = Nuclide.from_symbol("Ni57")
@@ -134,14 +135,14 @@ ni62_xs = ni62.get_incident_gamma_daughters()['Co61'].xs
 ax = ni58_xs.plot()
 ni62_xs.plot(ax=ax)
 
-out = OutP(Path.cwd()/'sims'/'0_inp'/'outp')
-outp_du = OutP(Path.cwd()/'sims'/'1_inp'/'outp')
+out = OutP(Path.cwd()/'sims'/'nickel'/'outp')
+# outp_du = OutP(Path.cwd()/'sims'/'du'/'outp')
 
-out.get_tally('VCD nickel')
-tally_chamber = out.get_tally('Chamber target')  # out.get_cell_by_name('Chamber target').get_tally()
-vcd_ni_tally = out.get_tally('VCD nickel')
-vcd_cell_tally = outp_du.get_tally('VCD cell')
-src_verify_tally = out.get_tally('Source tally')
+out.get_f4_tally('VCD nickel')
+tally_chamber = out.get_f4_tally('Chamber target')  # out.get_cell_by_name('Chamber target').get_tally()
+vcd_ni_tally = out.get_f4_tally('VCD nickel')
+vcd_cell_tally = out.get_f4_tally('VCD cell')
+src_verify_tally = out.get_f4_tally('Source tally')
 
 
 # calc # of Ni produced according to MCNP

@@ -30,3 +30,9 @@ SP3 -4 1.0 20.75
 @F4Tally.get_all_tally_cards()@
 PRDMP 3E5 -2
 PRINT 120
+TMESH
+CMESH13
+CORA13 0 6I 4
+CORB13 0 12I @chamber.z1@
+CORC13 360
+ENDMD
