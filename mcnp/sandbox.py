@@ -1,39 +1,61 @@
+import matplotlib.pyplot as plt
+
 from JSB_tools import Nuclide, FissionYields
 from pathlib import Path
 from JSB_tools.MCNP_helper.outp_reader import OutP
 import scipy
 
-outp = OutP(Path(__file__).parent/'sims'/'1_inp'/'outp')
-tally_up = outp.get_tally('Active up')
+outp = OutP(Path(__file__).parent/'sims'/'du_shot131'/'outp')
+tally_up = outp.get_f4_tally('Active down')
 u238 = Nuclide.from_symbol('U238')
 
 yields = FissionYields('U238', 'gamma', tally_up.energies)
-yields_cumm = FissionYields('U238', 'gamma', tally_up.energies, independent_bool=False)
+# yields_cumm = FissionYields('U238', 'gamma', tally_up.energies, independent_bool=False)
 
 _weights = tally_up.fluxes*u238.gamma_induced_fiss_xs.interp(tally_up.energies)
-_weights /= sum(_weights)
+# _weights /= sum(_weights)
 yields.weight_by_erg(_weights)
-yields_cumm.weight_by_erg(_weights)
+# yields_cumm.weight_by_erg(_weights)
 
-for n_name, yield_ in yields.yields.items():
-    n = Nuclide.from_symbol(n_name)
-    outs = []
-    if not 15 <= n.half_life <= 60*4:
+yields_ = {}
+for n, yield_ in yields.yields.items():
+    yield_ = sum(yield_)
+    n = Nuclide.from_symbol(n)
+    fac = 0.5**(10/n.half_life)-0.5**(300/n.half_life)
+
+    l = [g.intensity for g in n.decay_gamma_lines if 60 <= g.erg <= 1450]
+
+    if len(l):
+        fac *= max(l)
+    else:
         continue
-    for g in n.decay_gamma_lines:
-        if 218 <= g.erg.n <= 222 and g.intensity.n > 0.01:
-            outs.append(g)
-    if len(outs):
-        print(n, 'Ratio: ', sum(yield_)/sum(yields.yields['Xe139']))
-        print(outs)
 
+    yields_[n.name] = yield_*fac
 
-n = Nuclide.from_symbol('Xe139')
-parent_yield = sum(yields[n.name])
-print(n)
-print(f'cum {n.name} yield: {sum(yields_cumm[n.name])}  indp. {n.name} yield: {sum(yields[n.name])}')
+yields = {k: v for k, v in sorted(yields_.items(), key=lambda x: -x[1])}
 
-for x in n.get_decay_parents():
-    msg = f'{x}  parent yield/daughter yield: {(sum(yields[x.name]))/parent_yield},  '
+i=0
 
-    print(msg)
+zdata = {}
+adata = {}
+
+for k, v in yields.items():
+    n = Nuclide.from_symbol(k)
+    try:
+        zdata[n.Z] += v.n
+    except KeyError:
+        zdata[n.Z] = v.n
+    try:
+        adata[n.A] += v.n
+    except KeyError:
+        adata[n.A] = v.n
+
+    print(f'{k}:{v}; Z={n.Z}, {n}')
+    i += 1
+    if i > 20:
+        break
+
+plt.bar(list(zdata.keys()), list(zdata.values()))
+plt.figure()
+plt.bar(list(adata.keys()), list(adata.values()))
+plt.show()
