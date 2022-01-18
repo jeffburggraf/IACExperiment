@@ -20,9 +20,13 @@ def get_fraction(shot: Shot, FF: str):
             return True
 
         if shot.ar_flow > 0 and shot.he_flow == 0 and shot.pressure > 1.2:
-            points_debug = GetPoints(['Ar'], [1], 1.3)
-            points_up = GetPoints(['Ar'], [1], 1.3, cut=cut_up)
-            points_down = GetPoints(['Ar'], [1], 1.3, cut=cut_down)
+            points_debug = GetPoints(['Ar'], [1], 1.4)
+            points_up = GetPoints(['Ar'], [1], 1.4, cut=cut_up)
+            points_down = GetPoints(['Ar'], [1], 1.4, cut=cut_down)
+        elif shot.ar_flow == 0 and shot.he_flow > 0 and shot.pressure > 1.2:
+            points_debug = GetPoints(['He'], [1], 1.4)
+            points_up = GetPoints(['He'], [1], 1.4, cut=cut_up)
+            points_down = GetPoints(['He'], [1], 1.4, cut=cut_down)
 
         else:
             assert False

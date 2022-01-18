@@ -24,18 +24,19 @@ c_per_second = (192/3.0)*1E-6
 charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
+gas_mats = {134: {'gasses': ['Ar'], 'fractions': [1], 'pressure': 1.4},
+           131: {'gasses': ['He'], 'fractions': [0.5], 'pressure': 1.4}}
 #  ======================================================
-model_correction = 0.5*(ufloat(1.51, 0.05) + ufloat(1.04, 0.05))  # from Ni activation model_avg/meas (average of close and far Ni)
+model_correction = 0.5*(ufloat(1.51, 0.05) + ufloat(1.04, 0.05))  #  from Ni activation model_avg/meas (average of close and far Ni)
 # model_correction = 1.0/1.5
-nuclide = 'Sr94'  # Kr89, Sb132, Sr94
-shot_num = 134
+nuclide = 'Xe139'  # Kr89, Sb132, Sr94
+shot_num = 131
 suppress_upstream = True  # Do or don't include FF's which escape from upstream of foil
 do_decay_corr = False
 assume_trans_time = 20
 gamma_index = 0
-
 #  ======================================================
-
+gas_args = gas_mats[shot_num]
 shot = Shot(shot_num)
 # shot.list.plotly(remove_baseline=True)
 
@@ -91,7 +92,7 @@ n_ff_meas *= decay_corr
 
 # shot.llnl_spe.plot_erg_spectrum()
 
-outp = OutP(Path(__file__).parent/'sims'/'du'/'outp')
+outp = OutP(Path(__file__).parent/'sims'/'du_shot131'/'outp')
 tally_up = outp.get_f4_tally('Active up')
 tally_down = outp.get_f4_tally('Active down')
 # tally_down.plot()
@@ -118,7 +119,7 @@ dedx_sub_nuclide = nuclide  # in case an equiv nuclide may be used to stopping p
 if nuclide[:2] == 'Kr':
     dedx_sub_nuclide = 'Kr91'
 
-fraction_escape_up, fraction_escape_down = get_fraction(Shot(134), dedx_sub_nuclide)
+fraction_escape_up, fraction_escape_down = get_fraction(Shot(shot_num), dedx_sub_nuclide)
 
 print(f"fraction_escape_up: {fraction_escape_up}    fraction_escape_down: {fraction_escape_down}")
 
@@ -133,6 +134,7 @@ decay_times = np.linspace(0, ff.half_life.n*4)
 y_0 = ff_yield.n*decay_nuclide(ff.name, False)(decay_times)[nuclide]
 y = y_0.copy()
 # print('Decay parents: ', [_.name for _ in ff.get_decay_parents()])
+
 
 for parent in ff.get_decay_parents():
     decay_sol = decay_nuclide(parent.name, False, )

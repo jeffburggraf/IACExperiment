@@ -39,8 +39,9 @@ steel_mat = StainlessSteel()
 al_mat = Aluminum()
 air_mat = Air()
 ti_mat = Titanium()
-gas_mat_ni = Material.gas(['Ar'], atom_fractions=[0.5], pressure=1, mat_name='Ar_STP')
-gas_mat_du = Material.gas(['Ar'], atom_fractions=[0.5], pressure=1.4, mat_name='Ar_1.4')
+gas_mat_ni = Material.gas(['Ar', 'He'], atom_fractions=[0.5, 0.5], pressure=1.16, mat_name='Ni_run_gas')
+gas_mat_shot134 = Material.gas(['Ar'], atom_fractions=[0.5], pressure=1.4, mat_name='Ar_1.4')
+gas_mat_shot131 = Material.gas(['He'], atom_fractions=[0.5], pressure=1.4, mat_name='He_1.4')
 nickel_mat = Nickel()
 pb_mat = Lead()
 # /---
@@ -159,7 +160,6 @@ if __name__ == '__main__':
     # below is for fission sim with DU target
     du_thickness = 0.5/10  # in cm
 
-    chamber.material = gas_mat_du
     chamber_target.z0 = chamber_target.z0
     chamber_target.dz = du_thickness - 20*units.um
     chamber_target.radius = 0.5
@@ -170,14 +170,20 @@ if __name__ == '__main__':
                                        dz=10*units.um, cell_name='Active target down')
     active_target_up = RightCylinder(0.5, material=du_mat, importance=imp, z0=chamber_target.z0,
                                      dz=-10 * units.um, cell_name='Active target up')
+
     chamber.geometry = chamber.geometry & ~active_target_up & ~active_target_down
+
     tally_active_down = F4Tally(active_target_down, particle='p', tally_name='Active down')
     tally_active_down.set_erg_bins(4, 22, 20)
 
     tally_active_up = F4Tally(active_target_up, particle='p', tally_name='Active up')
     tally_active_up.set_erg_bins(4, 22, 20)
 
-    inp.write_inp_in_scope(globals(), 'du')
+    chamber.material = gas_mat_shot134
+    inp.write_inp_in_scope(globals(), 'du_shot134')
+
+    chamber.material = gas_mat_shot131
+    inp.write_inp_in_scope(globals(), 'du_shot131')
 
 
 
