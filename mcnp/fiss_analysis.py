@@ -25,12 +25,12 @@ charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 gas_mats = {134: {'gasses': ['Ar'], 'fractions': [1], 'pressure': 1.4},
-           131: {'gasses': ['He'], 'fractions': [0.5], 'pressure': 1.4}}
+            131: {'gasses': ['He'], 'fractions': [0.5], 'pressure': 1.4}}
 #  ======================================================
 model_correction = 0.5*(ufloat(1.51, 0.05) + ufloat(1.04, 0.05))  #  from Ni activation model_avg/meas (average of close and far Ni)
 # model_correction = 1.0/1.5
 nuclide = 'Xe139'  # Kr89, Sb132, Sr94
-shot_num = 131
+shot_num = 134
 suppress_upstream = True  # Do or don't include FF's which escape from upstream of foil
 do_decay_corr = False
 assume_trans_time = 20
@@ -39,7 +39,7 @@ gamma_index = 0
 gas_args = gas_mats[shot_num]
 shot = Shot(shot_num)
 # shot.list.plotly(remove_baseline=True)
-
+shot.list.plot_erg_spectrum(eff_corr=True)
 
 ni_meas_scale = n_electrons / model_correction
 
@@ -81,6 +81,7 @@ print(fit_result.fit_report())
 print(f"Fission fragment: {ff}")
 print(f"Gamma line used: {gamma_line}")
 print(f'decay_corr: {decay_corr}')
+print("Model correction: ", model_correction)
 
 amp_error = fit_result.params['_0amplitude'].stderr
 if amp_error is None:
@@ -95,8 +96,6 @@ n_ff_meas *= decay_corr
 outp = OutP(Path(__file__).parent/'sims'/'du_shot131'/'outp')
 tally_up = outp.get_f4_tally('Active up')
 tally_down = outp.get_f4_tally('Active down')
-# tally_down.plot()
-# tally_up.plot()
 
 
 atom_density = tally_up.cell.atom_density
@@ -113,7 +112,6 @@ ff_yield = np.average(yields.get_yield(nuclide),
 print('Atom density: ', atom_density)
 print(f'{nuclide} independent yield: ', ff_yield)
 
-# plt.plot(tally_down.energies, u238.gamma_induced_fiss_xs.interp(tally_down.energies))
 
 dedx_sub_nuclide = nuclide  # in case an equiv nuclide may be used to stopping power business
 if nuclide[:2] == 'Kr':
@@ -130,25 +128,8 @@ fiss_rate_up = np.sum(u238.gamma_induced_fiss_xs.interp(tally_up.energies)*tally
 n_fiss_down = ni_meas_scale * fiss_rate_down
 n_fiss_up = ni_meas_scale * fiss_rate_up
 
-decay_times = np.linspace(0, ff.half_life.n*4)
-y_0 = ff_yield.n*decay_nuclide(ff.name, False)(decay_times)[nuclide]
-y = y_0.copy()
-# print('Decay parents: ', [_.name for _ in ff.get_decay_parents()])
-
-
-for parent in ff.get_decay_parents():
-    decay_sol = decay_nuclide(parent.name, False, )
-    __yield = np.average(yields.get_yield(parent.name),
-                         weights=u238.gamma_induced_fiss_xs.interp(tally_down.energies)*tally_down.nominal_fluxes)
-    __yield = unp.nominal_values(__yield)
-    print(f"Parent: {parent}, yield: {__yield}")
-    y += __yield*decay_sol(decay_times, True)[ff.name]
-
-plt.figure()
-plt.plot(decay_times, y, label='Not pure')
-plt.plot(decay_times, y_0, label='pure')
-plt.legend()
-
+time_bins = np.arange(0, 300, 5)
+shot.list.plot_time_dependence(energy=fit_ergs[0], bins=time_bins, make_rate=True, eff_corr=True)
 
 if suppress_upstream:
     n_fiss_up *= 0

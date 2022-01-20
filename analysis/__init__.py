@@ -272,38 +272,7 @@ def __get_all_shots_data(load=False):
 __get_all_shots_data(False)
 
 if __name__ == '__main__':
-    from lmfit.models import ExponentialModel
-    import uncertainties.unumpy as unp
-    s = None
-    for shot in range(134, 135):
-        list_ = Shot(shot).list
-        if s is None:
-            s = list_
-        else:
-            s += list_
-        print(list_.times[-1])
-    t_bins = np.linspace(0, s.times[-1], 40)
-    sig, _, bins =s.get_time_dependence(221.3, t_bins, signal_window_kev=1.5, debug_plot=True)
-    b_centers = 0.5*(bins[1:] + bins[:-1])
-    slice_ = slice(np.argmax(sig), None)
-    sig = sig[slice_]
-    b_centers = b_centers[slice_]
-
-    y = unp.nominal_values(sig)
-    weights = np.where(unp.std_devs(sig) != 0, unp.std_devs(sig), 1)
-    weights = 1.0/weights
-
-    model = ExponentialModel()
-    params = model.guess(x=b_centers, data=y)
-    fit_result = model.fit(data=y, x=b_centers, weights=weights, params=params)
-    fit_result.plot_fit()
-    print(fit_result.fit_report())
-
-    plt.show()
-    # time_dp = s.get_time_dependence(221.3,t_bins,)
-
-    # s.plotly(remove_baseline=True)
-
-
+    s = Shot(134, )
+    s.list.plotly()
 
 
