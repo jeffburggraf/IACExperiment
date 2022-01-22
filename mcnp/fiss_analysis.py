@@ -29,7 +29,7 @@ gas_mats = {134: {'gasses': ['Ar'], 'fractions': [1], 'pressure': 1.4},
 #  ======================================================
 model_correction = 0.5*(ufloat(1.51, 0.05) + ufloat(1.04, 0.05))  #  from Ni activation model_avg/meas (average of close and far Ni)
 # model_correction = 1.0/1.5
-nuclide = 'Xe139'  # Kr89, Sb132, Sr94
+nuclide = 'Sr94'  # Kr89, Sb132, Sr94
 shot_num = 134
 suppress_upstream = True  # Do or don't include FF's which escape from upstream of foil
 do_decay_corr = False
@@ -38,6 +38,8 @@ gamma_index = 0
 #  ======================================================
 gas_args = gas_mats[shot_num]
 shot = Shot(shot_num)
+shot.list.plot_sample_ready()
+
 # shot.list.plotly(remove_baseline=True)
 shot.list.plot_erg_spectrum(eff_corr=True)
 
@@ -129,7 +131,7 @@ n_fiss_down = ni_meas_scale * fiss_rate_down
 n_fiss_up = ni_meas_scale * fiss_rate_up
 
 time_bins = np.arange(0, 300, 5)
-shot.list.plot_time_dependence(energy=fit_ergs[0], bins=time_bins, make_rate=True, eff_corr=True)
+shot.list.plot_time_dependence(energy=fit_ergs[0], bins=time_bins, signal_window_kev=6, make_rate=True, eff_corr=True)
 
 if suppress_upstream:
     n_fiss_up *= 0

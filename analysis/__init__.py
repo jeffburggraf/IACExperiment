@@ -130,6 +130,7 @@ class Shot:
 
         if self.shotnum in Shot.bad_shots:
             warnings.warn(f"Bad shot {self.shotnum} used!")
+        self.good_shot = self.shotnum not in Shot.bad_shots
 
     @property
     def max_time(self):
@@ -175,8 +176,10 @@ class Shot:
         return out
 
     @staticmethod
-    def find_shots(**attribs) -> List[Shot]:
+    def find_shots(good_shot=True, **attribs) -> List[Shot]:
         shots = []
+        attribs['good_shot'] = good_shot
+
         for shot_num in ALL_SHOTS_METADATA:
             if shot_num in Shot.bad_shots:
                 continue

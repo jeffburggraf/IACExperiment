@@ -12,7 +12,7 @@ charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 
-ff = 'Xe139'   #  Kr89
+ff = 'La144'   #  Kr89
 decay_rate = True
 fraction_escape = 0.1
 
