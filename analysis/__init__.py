@@ -176,9 +176,36 @@ class Shot:
         return out
 
     @staticmethod
-    def find_shots(good_shot=True, **attribs) -> List[Shot]:
+    def find_shots(good_shot=True, eval_func='1==1', flow=None, he_flow=None, ar_flow=None, tube_len=None, cold_filter=None, mylar=None,
+                   foil_pos=None, flow_stop=None, num_filters=None, beam_duration=None, convertor=None) -> List[Shot]:
+        """
+
+        Args:
+            good_shot:
+            eval_func: e.g.: self.he_flow + self.ar_flow >= 1.0
+            flow:
+            he_flow:
+            ar_flow:
+            tube_len:
+            cold_filter:
+            mylar:
+            foil_pos:
+            flow_stop:
+            num_filters:
+            beam_duration:
+            convertor:
+
+        Returns:
+
+        """
         shots = []
-        attribs['good_shot'] = good_shot
+        attribs = {'flow': flow, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
+                   'cold_filter': cold_filter, 'mylar': mylar, 'foil_pos': foil_pos, 'flow_stop': flow_stop,
+                   'num_filters': num_filters, 'beam_duration': beam_duration, 'convertor': convertor,
+                   'good_shot': good_shot
+                   }
+        attribs = dict(filter(lambda k_v: k_v[1] is not None, attribs.items()))
+        # attribs['good_shot'] = good_shot
 
         for shot_num in ALL_SHOTS_METADATA:
             if shot_num in Shot.bad_shots:
@@ -186,7 +213,9 @@ class Shot:
             shot = Shot(shot_num)
             try:
                 if all([getattr(shot, name) == value for name, value in attribs.items()]):
-                    shots.append(shot)
+                    eval_func = eval_func.replace('self', 'shot')
+                    if eval(eval_func):
+                        shots.append(shot)
             except AttributeError:
                 raise
         return shots
@@ -200,7 +229,7 @@ class Shot:
                 return False
         return True
 
-    def __repr__(self, attribs=0):
+    def __repr__(self, attribs='all'):
         """
 
         Args:
@@ -211,7 +240,7 @@ class Shot:
         """
         outs = []
         if attribs == 'all':
-            attribs = self.__config_attribs__
+            attribs = ['shotnum'] + self.__config_attribs__
         elif attribs == 0:
             attribs = ['shotnum', 'comment', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
         else:

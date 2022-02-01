@@ -15,7 +15,7 @@ from JSB_tools.nuke_data_tools import FissionYields
 from analysis import Shot
 from JSB_tools.nuke_data_tools.gamma_spec import gamma_search
 from JSB_tools import Nuclide
-
+from JSB_tools import mpl_hist
 
 # l = None
 #
@@ -39,8 +39,8 @@ for s in Shot.find_shots(cold_filter=True):
         l += s.list
     print(s)
 
-l.plot_erg_spectrum(erg_min=60, time_max=320, eff_corr=True, remove_baseline=True)
-# l.plotly(erg_min=60, erg_max=2300, time_bin_width=7)
-# l.plot_time_dependence(1413.3, np.arange(0, 500, 5), signal_window_kev=4.5)
+y, bins = l.get_erg_spectrum(erg_min=60, time_max=320, eff_corr=True, remove_baseline=True, baseline_method='median',
+                             return_bin_edges=True)
+mpl_hist(bins, y)
 
 plt.show()

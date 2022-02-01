@@ -26,7 +26,7 @@ def recal(spe: SPEFile, nuclide_name, intensity_thresh=0.03):
     return np.polyfit(peak_channels, true_ergs, deg=2)[::-1]
 
 
-erg_cal = recal(SPEFile('/efficiencies/data/20211019-1723170-GEM20P4-70, 61-TP24472A.Spe'), 'Eu152')
+# erg_cal = recal(SPEFile('/efficiencies/data/20211019-1723170-GEM20P4-70, 61-TP24472A.Spe'), 'Eu152')
 
 data_path = Path(__file__).parent/'data'
 
@@ -141,7 +141,7 @@ for src_id, dist_file_dict in get_files().items():
             ax_by_dist_and_src_name[source.name] = {0.317: axs[0], 15.7: axs[1]}
             ax = ax_by_dist_and_src_name[source.name][dist]
 
-        spe = SPEFile(fpath, discard_quadratic_cal=False)
+        spe = SPEFile(fpath)
         n_decays = source.get_n_decays(spe.livetime, spe.system_start_time)
         ax.set_title(f'{source.name} @ {dist}')
 
