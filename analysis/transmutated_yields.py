@@ -12,7 +12,7 @@ charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 
-ff = 'Rb94'   #  Kr89
+ff = 'Mo101'   #  Kr89
 decay_rate = True
 fraction_escape = 0.1
 
@@ -90,6 +90,7 @@ if __name__ == '__main__':
     for k, v in srt(data[ff.name]).items():
         if k != 'fission':
             n = Nuclide.from_symbol(k)
+            parent_hl = ' ' + n.human_friendly_half_life(include_errors=False)
             p = None
             for g in n.decay_gamma_lines[:3]:
                 if g.intensity > 0.01:
@@ -97,6 +98,8 @@ if __name__ == '__main__':
                         p = True
                         print(n)
                     print(f'\t{g}')
+        else:
+            parent_hl = ''
 
         if y is None:
             y = np.zeros_like(v)
@@ -105,7 +108,7 @@ if __name__ == '__main__':
             print(f"Yield from {k} too small. Not included in plot. ")
             continue
 
-        ax.fill_between(times, y, y + v, label=k)
+        ax.fill_between(times, y, y + v, label=f'{k}-{parent_hl}')
         ax.plot(times, y + v, c='black', linewidth=1)
 
         y += v

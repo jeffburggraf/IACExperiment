@@ -31,16 +31,5 @@ from JSB_tools import mpl_hist
 # l.plotly(erg_min=50)
 # l.plot_time_dependence(1413.3, np.arange(0, 500, 5), signal_window_kev=4.5)
 
-l = None
-for s in Shot.find_shots(cold_filter=True):
-    if l is None:
-        l = s.list
-    else:
-        l += s.list
-    print(s)
-
-y, bins = l.get_erg_spectrum(erg_min=60, time_max=320, eff_corr=True, remove_baseline=True, baseline_method='median',
-                             return_bin_edges=True)
-mpl_hist(bins, y)
-
-plt.show()
+l=MaestroListFile()
+Shot.ni

@@ -9,7 +9,7 @@ import re
 from openpyxl import load_workbook
 from itertools import count
 import pickle
-from typing import Dict, List
+from typing import Dict, List, Union
 from matplotlib import pyplot as plt
 from functools import cache, cached_property
 from JSB_tools import mpl_hist
@@ -61,8 +61,21 @@ CONFIG_ATTRIB = object
 
 
 class Shot:
-    bad_shots = [42, 43, 44, 82, 123, 136]
+    bad_shots = [6, 42, 43, 44, 82, 119, 123, 136, 140]
     equal_test_attribs = {'flow', 'mylar', }
+
+    @staticmethod
+    def nickel_list():
+        p = data_dir/'Nickel'/'Nickel.Lis'
+        try:
+            return MaestroListFile.from_pickle(p)
+        except FileNotFoundError:
+            return MaestroListFile(p)
+
+    @staticmethod
+    def nickel_spe():
+        p = data_dir / 'Nickel' / 'Nickel.Spe'
+        return SPEFile(p)
 
     def __setattr__(self, key, value):
         """
@@ -220,6 +233,61 @@ class Shot:
                 raise
         return shots
 
+    @staticmethod
+    def sum_shots_list(shots_list: List[Union[Shot, int]], truncate=False) -> MaestroListFile:
+        out = None
+
+        for shot in shots_list:
+            if isinstance(shot, int):
+                shot = Shot(shot)
+            l = shot.list
+            if out is None:
+                out = l
+            else:
+                out.__iadd__(l, truncate)
+        return out
+
+    @property
+    def acq_time(self):
+        with open(Path(__file__).parent/'shot_times.pickle', 'rb') as f:
+            times = pickle.load(f)
+
+        return times[self.shotnum]
+
+    @staticmethod
+    def n_shots_array(shots_list: List[Union[Shot, int]], time_bins):
+        """
+        Return the number of shots in list `shot_list` which are acquiring data for each time interval in time_bins
+        Args:
+            shots_list:
+            time_bins:
+
+        Returns:
+
+        """
+        def f(_tmax, _time_bins):
+            _out = np.zeros(len(_time_bins) - 1, dtype=float)
+            if _tmax >= _time_bins[-1]:
+                return np.ones_like(_out)
+            if _time_bins[0] >= _tmax:
+                return _out
+            n = np.searchsorted(_time_bins, _tmax, side='right') - 1
+            _out[:n] += 1
+            _out[n] += (_tmax - _time_bins[n])/(_time_bins[n+1] - _time_bins[n])
+            return _out
+
+        out = None
+        for shot in shots_list:
+            if isinstance(shot, int):
+                shot = Shot(shot)
+            r = f(shot.acq_time, time_bins)
+            if out is None:
+                out = r
+            else:
+                out += r
+
+        return out
+
     def __eq__(self, other: Shot):
         assert isinstance(other, Shot)
         for key in self.__config_attribs__:
@@ -240,7 +308,7 @@ class Shot:
         """
         outs = []
         if attribs == 'all':
-            attribs = ['shotnum'] + self.__config_attribs__
+            attribs = ['shotnum', 'comment'] + self.__config_attribs__
         elif attribs == 0:
             attribs = ['shotnum', 'comment', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
         else:
@@ -303,8 +371,21 @@ def __get_all_shots_data(load=False):
 
 __get_all_shots_data(False)
 
+
+def save_shot_times():
+    shots_times = {}
+    for shot in Shot.find_shots():
+        shots_times[shot.shotnum] = shot.list.times[-1]
+        #
+    shots_times = {k: v for k, v in sorted(shots_times.items(), key=lambda k_v: -k_v[-1])}
+    with open(Path(__file__).parent/'shot_times.pickle', 'wb') as f:
+        pickle.dump(shots_times, f)
+
+
 if __name__ == '__main__':
-    s = Shot(134, )
-    s.list.plotly()
+    # save_shot_times()
+    shot = Shot.n_shots_array(None, None, )
+    # s = Shot(134, )
+    # s.list.plotly()
 
 
