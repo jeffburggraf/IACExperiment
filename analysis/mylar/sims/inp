@@ -1,0 +1,46 @@
+[title]
+Stopping of fission products with simple geom
+
+[ T-Userdefined ]
+file= PTRAC.txt
+
+[parameters]
+ icntl = 0  # 7 for geometry output, Use 0 for normal calculations
+ maxcas = @nps@
+  nspred = 2  # energy straggling
+ nedisp = 1  # angle straggling
+ maxbch = 1  # one batch
+ negs=0  # ignore e+,e- and photon
+ infout = 8
+ emin(18) = @0.5/200@
+
+[T-Gshow]
+     mesh =  xyz            # mesh type is xyz scoring mesh
+     x-type =    2            # x-mesh is linear given by xmin, xmax and nx
+     nx =  200            # number of x-mesh points
+     xmin =  -3           # minimum value of x-mesh points
+     xmax =   3           # maximum value of x-mesh points
+    y-type =    1            # y-mesh is given by the below data
+       ny =    1            # number of y-mesh points
+        -3 3
+    z-type =    2            # z-mesh is linear given by zmin, zmax and nz
+       nz =  1000            # number of z-mesh points
+     zmin =  0           # minimum value of z-mesh points
+     zmax =  7           # maximum value of z-mesh points
+     axis =   xz            # axis of output
+     file = gshow.out  # file name of output for the above axis
+     epsout =  1            # (D=0) generate eps file by ANGEL
+
+[material]
+@Material.get_all_material_cards()@
+
+[cell]
+@Cell.get_all_cell_cards()@
+
+[surface]
+@Surface.get_all_surface_cards()@
+
+[source]
+@NucleusSource.all_sources()@
+
+
