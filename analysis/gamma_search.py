@@ -10,6 +10,9 @@ from uncertainties import unumpy as unp
 from JSB_tools import decay_nuclide
 
 
+# ====================================
+#  ====================================
+
 outp = OutP(Path(__file__).parent.parent/'mcnp'/'sims'/'du_shot134'/'outp')
 tally = outp.get_f4_tally('Active down')
 
@@ -22,7 +25,7 @@ y = FissionYields('U238', 'gamma', tally.energies)
 y.weight_by_erg(weights)
 y.threshold()
 
-times = np.arange(10, 320, 1)
+times = np.arange(10, 400, 1)
 rates = {}
 
 
@@ -65,11 +68,32 @@ with open(Path(__file__).parent/'predicted_time_dep.pickle', 'wb') as f:
     pickle.dump(times, f)
 
 
+all_gammas = []
+all_gammas_yields = []
+
+
 for k, v in rates.items():
     n = Nuclide.from_symbol(k)
     gammas = n.decay_gamma_lines[:3]
     print(f"{n} - {v:.2e}")
     for g in gammas:
         print(f"\t{g}")
+        all_gammas.append(g)
+        all_gammas_yields.append(v)
 
 
+all_gammas_yields = np.array(all_gammas_yields)
+all_gammas_yields /= max(all_gammas_yields)
+gamma_ergs = [g.erg.n for g in all_gammas]
+srt = np.argsort(gamma_ergs)
+
+for i in srt:
+    g = all_gammas[i]
+    y = all_gammas_yields[i]
+    if y < 1E-5:
+        continue
+    # try:
+    hl = Nuclide.from_symbol(g.parent_nuclide_name).half_life.n
+    # except AttributeError:
+    #     hl = -1
+    print(f'Rel. yield: {y:.1e}; t-1/2 = {hl:<8}; {g}')

@@ -6,13 +6,17 @@ from JSB_tools.MCNP_helper.outp_reader import OutP
 import scipy
 import numpy as np
 from uncertainties import unumpy as unp
+"""
+Nucei whos rate matches that predicted here:
+La-144 - 397 KeV
 
+"""
 c_per_second = (192/3.0)*1E-6
 charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 
-ff = 'Mo101'   #  Kr89
+ff = 'Nb98'   #  Kr89
 decay_rate = True
 fraction_escape = 0.1
 
@@ -68,8 +72,13 @@ for parent, yield_ in yields.yields.items():
 
 
 def srt(dict_):
-    out = {'fission': dict_['fission']}
-    del dict_['fission']
+    try:
+        out = {'fission': dict_['fission']}
+        del dict_['fission']
+
+    except KeyError:
+        out = {}
+
     for k, v in sorted(dict_.items(), key=lambda k_v: -sum(k_v[1])):
         out[k] = v
     return out

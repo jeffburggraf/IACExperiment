@@ -2,7 +2,9 @@ from JSB_tools.list_reader import MaestroListFile
 from analysis import Shot
 from JSB_tools import mpl_hist
 import numpy as np
+from JSB_tools.spe_reader import save_spe
 from matplotlib import pyplot as plt
+from pathlib import Path
 
 
 class Fig:
@@ -21,7 +23,7 @@ class Fig:
                 self.ax = self.ax.flatten()
                 self.i = 0
 
-            yield from [self.ax[self.i] for _ in range(5)]
+            yield from [self.ax[self.i] for _ in range(3)]
 
             self.i += 1
 
@@ -30,34 +32,72 @@ class Fig:
 erg_spectra_min = 60
 erg_spectra_max = 2200
 erg_spectra_time_max = 300
-shot_groups = [list(range(1, 45))]
-lines = [137.72, 174.97, 218.7, 511, 602.36, 1427.7]
+shot_groups = [list(range(1, 44)),     # 0
+               list(range(44, 83)),    # 1
+               list(range(107, 119)),  # 2
+               list(range(119, 129)),  # 3
+               list(range(129, 132)),  # 4
+              ]
+individual = list(range(98, 107)) + [132, 133, 134, 135, 137, 138, 139]
+# lines = [93.63, 137.7, 174.97, 218.59, 511, 602.36, 697.05, 973.9, 1427.7, 1460.8]
+lines = [93.63,
+         174.97,
+         218.59,
+         306.83,
+         397.44,
+         590.24,
+         602.36,
+         697.05,
+         973.9,
+         1427.7,
+         1460.8,
+         1564.64]
+
+#  if cold: 455.49 - Xe-137
+#           1118.73  - Kr90
+#           121.79  -  Kr90
+#           831.69 and 1032.00 -  Rb90
 i = 0
-plotly = True
+plotly = False
 time_dep_erg = None
 time_dep_sigma = 3
 time_dep_b_width = 5
 time_step = 5
 time_bin_width = 10
+plot=False
+group_index = 0
 #  ====================================================
 
 
-for group in shot_groups:
-    group = list(filter(lambda x: x not in Shot.bad_shots, group))
-    fig = Fig()
-    print(group)
+cwd = Path(__file__).parent
 
-    l = Shot.sum_shots_list(group)
+group = list(filter(lambda x: x not in Shot.bad_shots, shot_groups[group_index]))
+fig = Fig()
+print(group)
 
-    if plotly:
-        def f(b0, b1):
-            n = Shot.n_shots_array(group, [b0, b1])[0]
-            print(b0, b1, n)
+l = Shot.sum_shots_list(group[:2])
+print( cwd/'fake_spes'/f"group {group_index + 1}")
+spe = l.SPE
+spe.description = 'Shots ' + str(group)
+save_spe(l.SPE, cwd/'fake_spes'/f"group {group_index + 1}")
 
-            return 1.0/n
-        l.plotly(erg_min=60, erg_max=2200, time_step=time_step, time_bin_width=time_bin_width, time_scale_func=f,
-                 convolve_overlay_sigma=1, remove_baseline=True)
 
+for k in individual:
+    _shot = Shot(k)
+    spe = _shot.list.SPE
+    spe.description = f'Shot {k}'
+    save_spe(spe, cwd/'fake_spes'/f"Shot {k}")
+
+
+if plotly:
+    def f(b0, b1):
+        n = Shot.n_shots_array(group, [b0, b1])[0]
+        print(b0, b1, n)
+
+        return 1.0/n
+    l.plotly(erg_min=60, erg_max=2200, time_step=time_step, time_bin_width=time_bin_width, time_scale_func=f,
+             convolve_overlay_sigma=1, remove_baseline=True)
+if plot:
     if time_dep_erg is not None:
         time_bins = np.arange(0, l.times[-1], time_dep_b_width)
 

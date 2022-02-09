@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 import warnings
-
 import numpy as np
 from JSB_tools.list_reader import MaestroListFile, get_merged_time_dependence
 from pathlib import Path
@@ -15,6 +13,8 @@ from functools import cache, cached_property
 from JSB_tools import mpl_hist
 from JSB_tools.spe_reader import SPEFile
 from mpant_reader import MPA
+from datetime import datetime
+
 
 cwd = Path(__file__).parent
 

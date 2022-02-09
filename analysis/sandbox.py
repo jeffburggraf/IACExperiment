@@ -31,5 +31,4 @@ from JSB_tools import mpl_hist
 # l.plotly(erg_min=50)
 # l.plot_time_dependence(1413.3, np.arange(0, 500, 5), signal_window_kev=4.5)
 
-l=MaestroListFile()
-Shot.ni
+Shot(134).list.plotly(erg_max=2000, remove_baseline=True, convolve_overlay_sigma=1, time_bin_width=40)

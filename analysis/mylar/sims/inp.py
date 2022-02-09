@@ -7,7 +7,7 @@ from pathlib import Path
 from JSB_tools.MCNP_helper.units import um
 
 #  =================================================================
-nuclides = ['Xe139', 'Mo105', ]
+nuclides = ['Xe139', 'Mo105', 'Sr94']
 nps = 10000
 #  =================================================================
 
