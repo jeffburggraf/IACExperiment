@@ -19,7 +19,7 @@ ys_up = {}
 stop_rs = {}
 stop_zs = {}
 stop_data = {}
-#  stop_data[ff]  = {"axs":(axz, azr), data: {2.5: ([..zs..], [..rs..]), ...}}
+
 
 for path, attribs in sorted(fman.find_paths(ptrac=True).items(), key=lambda k_v: k_v[1]['my_thickness']):
     tree_helper = PHITSTTreeHelper(path)
