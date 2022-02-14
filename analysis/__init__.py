@@ -64,6 +64,8 @@ class Shot:
     bad_shots = [6, 42, 43, 44, 82, 119, 123, 136, 140]
     equal_test_attribs = {'flow', 'mylar', }
 
+    shape_cal = [0.4448941791251471, 0.000246982583338865, -1.538593499008935e-08]
+
     @staticmethod
     def nickel_list():
         p = data_dir/'Nickel'/'Nickel.Lis'
@@ -145,6 +147,18 @@ class Shot:
             warnings.warn(f"Bad shot {self.shotnum} used!")
         self.good_shot = self.shotnum not in Shot.bad_shots
 
+    @staticmethod
+    def get_sigma(erg):
+        return np.sum([c*erg**i for i, c in enumerate(Shot.shape_cal)])
+
+    @staticmethod
+    def get_fwhm(erg):
+        return 2.355*Shot.get_sigma(erg)
+
+    @staticmethod
+    def get_peak_width(erg):
+        return 4*Shot.get_sigma(erg)
+
     @property
     def max_time(self):
         return self.list.times[-1]
@@ -214,13 +228,12 @@ class Shot:
         shots = []
         attribs = {'flow': flow, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
                    'cold_filter': cold_filter, 'mylar': mylar, 'foil_pos': foil_pos, 'flow_stop': flow_stop,
-                   'num_filters': num_filters, 'beam_duration': beam_duration, 'convertor': convertor,
-                   'good_shot': good_shot_only
+                   'num_filters': num_filters, 'beam_duration': beam_duration, 'convertor': convertor
                    }
         attribs = dict(filter(lambda k_v: k_v[1] is not None, attribs.items()))
 
         for shot_num in ALL_SHOTS_METADATA:
-            if shot_num in Shot.bad_shots:
+            if good_shot_only and shot_num in Shot.bad_shots:
                 continue
             shot = Shot(shot_num)
             try:

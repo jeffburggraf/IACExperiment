@@ -25,7 +25,7 @@ y = FissionYields('U238', 'gamma', tally.energies)
 y.weight_by_erg(weights)
 y.threshold()
 
-times = np.arange(10, 400, 1)
+times = np.arange(10, 350, 1)
 rates = {}
 
 
@@ -36,13 +36,13 @@ for name, yields in y.yields.items():
     yield_ = sum(unp.nominal_values(yields))
     for n, rel_hz in decay_nuclide(name, True)(times).items():
         hz = yield_ * rel_hz
-        value = np.trapz(hz, times)
+        tot_decays = np.trapz(hz, times)
 
         try:
-            rates[n] += value
+            rates[n] += tot_decays
             predicted_time_dep[n] += hz
         except KeyError:
-            rates[n] = value
+            rates[n] = tot_decays
             predicted_time_dep[n] = hz
 
 
@@ -57,7 +57,8 @@ for n in list(rates.keys()):
 
 rates = {k: v for k, v in filter(lambda k_v: k_v[1] != 0, rates.items())}
 rates = {k: v for k, v in sorted(rates.items(), key=lambda k_v: -k_v[1])}
-
+max_rate = max(rates.values())
+rates = {k: v/max_rate for k, v in rates.items()}
 
 for k in predicted_time_dep.keys():
     predicted_time_dep[k] /= max(predicted_time_dep[k])
@@ -86,6 +87,7 @@ all_gammas_yields = np.array(all_gammas_yields)
 all_gammas_yields /= max(all_gammas_yields)
 gamma_ergs = [g.erg.n for g in all_gammas]
 srt = np.argsort(gamma_ergs)
+
 
 for i in srt:
     g = all_gammas[i]
