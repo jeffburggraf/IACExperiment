@@ -50,8 +50,8 @@ for parent, yield_ in yields.yields.items():
     elif yield_ < max_yield*0.01:
         break
 
-    f = decay_nuclide(parent, decay_rate)
-    decay_yields = f(times)
+    f = decay_nuclide(parent)
+    decay_yields = f(times, decay_rate=decay_rate)
 
     if parent not in data:
         data[parent] = {}

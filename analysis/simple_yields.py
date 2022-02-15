@@ -1,3 +1,7 @@
+"""
+Calculate yields for various nuclides.
+Decay corrections for transport are ignored.
+"""
 import numpy as np
 from matplotlib import pyplot as plt
 from JSB_tools import mpl_hist, Nuclide
