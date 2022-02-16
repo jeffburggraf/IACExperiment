@@ -7,15 +7,17 @@ from pathlib import Path
 from JSB_tools.MCNP_helper.units import um
 
 #  =================================================================
-nuclides = ['Xe139', 'Mo105', 'Sr94']
-nps = 10000
-sim_folder = 'vary'
+nuclides = ['Xe139', 'Sr94']
+nps = 60000
+dedx_scale = 0.15  # have done 0, 0.15, 0.3, 0.5
+which_mat = 'My'
+sim_folder = f'vary{dedx_scale:.1f}'
 #  =================================================================
 
 du = DepletedUranium()
 he_ar = Material.gas(['Ar', 'He'], atom_fractions=[1, 1], pressure=1.1)
 mylar_mat = Mylar()
-he_ar.set_srim_dedx()
+he_ar.set_srim_dedx(scaling=dedx_scale)
 du.set_srim_dedx()
 mylar_mat.set_srim_dedx()
 
@@ -53,7 +55,7 @@ sim_dir = Path(__file__).parent
 if sim_folder is not None:
     sim_dir /= sim_folder
 
-i = InputDeck.phits_input_deck(Path(__file__).parent/'inp',new_file_dir=sim_dir)
+i = InputDeck.phits_input_deck(Path(__file__).parent/'inp', new_file_dir=sim_dir)
 
 for my_th in [0, 2.5, 5, 10, 20]:
     my_th = my_th*um
