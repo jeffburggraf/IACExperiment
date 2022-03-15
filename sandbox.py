@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from JSB_tools.spe_reader import SPEFile
 import timeit
 import cProfile

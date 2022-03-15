@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 from shot_des import all_shots
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from matplotlib import pyplot as plt
 from mpant_reader import MPA
 from pathlib import Path

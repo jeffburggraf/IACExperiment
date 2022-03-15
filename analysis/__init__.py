@@ -1,7 +1,7 @@
 from __future__ import annotations
 import warnings
 import numpy as np
-from JSB_tools.list_reader import MaestroListFile, get_merged_time_dependence
+from JSB_tools.maestro_reader import MaestroListFile, get_merged_time_dependence
 from pathlib import Path
 import re
 from openpyxl import load_workbook
@@ -27,6 +27,9 @@ def time_offset(l: MaestroListFile):
 
 data_dir = Path(__file__).parent.parent/'exp_data'
 
+
+class Default:
+    pass
 
 @cache
 def _get_maesto_list_shot_paths():
@@ -62,7 +65,7 @@ CONFIG_ATTRIB = object
 
 class Shot:
     bad_shots = [6, 42, 43, 44, 82, 119, 123, 136, 140]
-    equal_test_attribs = {'flow', 'mylar', }
+    # equal_test_attribs = {'flow', 'mylar', }
 
     shape_cal = [0.4448941791251471, 0.000246982583338865, -1.538593499008935e-08]
 
@@ -112,6 +115,8 @@ class Shot:
         self.he_flow = shot_metadata['He (SLPM)'], CONFIG_ATTRIB
         self.ar_flow = shot_metadata['Ar (SLPM)'], CONFIG_ATTRIB
 
+        self.converter = shot_metadata['Converter'], CONFIG_ATTRIB
+
         try:
             self.pressure = shot_metadata['P (psai)']/14.5
         except TypeError:
@@ -130,9 +135,12 @@ class Shot:
         self.foil_pos = "center" if foil_pos == 'center' else 'upstream', CONFIG_ATTRIB
 
         self.flow_stop = shot_metadata['Flow stop (s)'], CONFIG_ATTRIB
+
+        if self.flow_stop is None:
+            self.flow_stop = 0
+
         self.num_filters = shot_metadata['#'], CONFIG_ATTRIB
         self.beam_duration = shot_metadata['Duration (s)'], CONFIG_ATTRIB
-        self.convertor = shot_metadata['Converter'], CONFIG_ATTRIB
 
         self.n_pulses = int(shot_metadata['# pulses'])
         self.comment = shot_metadata['Comments']
@@ -172,7 +180,7 @@ class Shot:
         return self.iac_filter_pos - 1
 
     @cached_property
-    def list(self):
+    def list(self) -> MaestroListFile:
         try:
             path = _get_maesto_list_shot_paths()[self.shotnum]
         except KeyError:
@@ -203,24 +211,32 @@ class Shot:
         return out
 
     @staticmethod
-    def find_shots(good_shot_only=True, eval_func='1==1', flow=None, he_flow=None, ar_flow=None, tube_len=None, cold_filter=None, mylar=None,
-                   foil_pos=None, flow_stop=None, num_filters=None, beam_duration=None, convertor=None) -> List[Shot]:
+    def find_shots(good_shot_only=True, eval_func='1==1', flow=None, he_flow=None, ar_flow=None, tube_len=None,
+                   cold_filter=None, mylar=None, foil_pos=None, flow_stop=None, num_filters=None, beam_duration=None,
+                   converter='W') -> List[Shot]:
         """
+        None always means not to sue as search criteria.
 
         Args:
-            good_shot_only:
+            good_shot_only: True means dont include "bad" shots.
+
             eval_func: e.g.: self.he_flow + self.ar_flow >= 1.0
-            flow:
-            he_flow:
-            ar_flow:
-            tube_len:
-            cold_filter:
-            mylar:
-            foil_pos:
-            flow_stop:
-            num_filters:
-            beam_duration:
-            convertor:
+
+            flow: Flow patter. Options: 010010 (default), 100001 (offset), 111111 (All in all out),
+                or 111010 (All in one out)
+
+            he_flow: He flow in SLPM
+            ar_flow: Ar flow in SLPM
+
+            tube_len: None for any. Options are: 4.16, 6.14, 9.44, 12.64  (in meters)
+            cold_filter: True or False
+            mylar: 0 for no mylar. options are: 0, 2.5, 5, 7.5, 10, 20
+            foil_pos: "1cm" for upstream. , "center" for center.
+            flow_stop: 0 for no stopping of gas. Otherwise, number of seconds before stop.
+            num_filters: Number of filters used.
+            beam_duration: Seconds beam was running. Usually 3.
+
+            converter: W for tungsten converter.
 
         Returns:
 
@@ -228,19 +244,26 @@ class Shot:
         shots = []
         attribs = {'flow': flow, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
                    'cold_filter': cold_filter, 'mylar': mylar, 'foil_pos': foil_pos, 'flow_stop': flow_stop,
-                   'num_filters': num_filters, 'beam_duration': beam_duration, 'convertor': convertor
-                   }
+                   'num_filters': num_filters, 'beam_duration': beam_duration, 'converter': converter}
+
         attribs = dict(filter(lambda k_v: k_v[1] is not None, attribs.items()))
 
+        if eval_func != '1==1':
+            assert 'self' in eval_func, "Bad eval_func. Example usage: 'self.ar_flow + self.he_flow >= 1.0'"
+
+        eval_func = eval_func.replace('self', 'shot')
+
         for shot_num in ALL_SHOTS_METADATA:
+
             if good_shot_only and shot_num in Shot.bad_shots:
                 continue
             shot = Shot(shot_num)
             try:
                 if all([getattr(shot, name) == value for name, value in attribs.items()]):
-                    eval_func = eval_func.replace('self', 'shot')
+
                     if eval(eval_func):
                         shots.append(shot)
+
             except AttributeError:
                 raise
         return shots
@@ -320,9 +343,9 @@ class Shot:
         """
         outs = []
         if attribs == 'all':
-            attribs = ['shotnum', 'comment'] + self.__config_attribs__
+            attribs = ['shotnum'] + self.__config_attribs__ +  ['comment']
         elif attribs == 0:
-            attribs = ['shotnum', 'comment', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter']
+            attribs = ['shotnum', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter', 'comment']
         else:
             if hasattr(attribs, '__iter__') and all(isinstance(x, str) for x in attribs):
                 pass
@@ -347,7 +370,7 @@ def __get_all_shots_data(load=False):
             return ALL_SHOTS_METADATA
 
     # Make header list
-    wb = load_workbook(filename=data_dir / 'IAC Run Spreadsheet.xlsx')
+    wb = load_workbook(filename=data_dir / 'IAC Run Spreadsheet.xlsx', data_only=True)
     sheet = wb['Sheet1']
     header_list = []
     for h in sheet['2']:
@@ -362,13 +385,14 @@ def __get_all_shots_data(load=False):
         shot_metadata = {h: v.value for h, v in zip(header_list, sheet[f'{i}'])}
         if shot_metadata['Comments'] is not None:
             comment = shot_metadata['Comments']
+        shot_metadata['Comments'] = comment
 
         flow = ''
-        for k in ['Upstream Inlet', 'Center Inlet', 'Downstream Inlet', 'Upstream Outlet', 'Center Outlet', 'Downstream Outlet']:
+        for k in ['Upstream Inlet', 'Center Inlet', 'Downstream Inlet', 'Upstream Outlet', 'Center Outlet',
+                  'Downstream Outlet']:
             flow += str(shot_metadata.pop(k))
 
         shot_metadata['flow'] = flow
-        shot_metadata['Comments'] = comment
 
         run_num = shot_metadata.get('Run #', None)
         if run_num is None:  # end of data

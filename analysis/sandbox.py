@@ -1,24 +1,36 @@
 import turtle
 import random
 
-pen = turtle.Turtle()
-pen.speed(10)
-pen.color("green")
-pen.penup()
+import matplotlib.pyplot as plt
 
-x = 0
-y = 0
-for n in range(11000):
-    pen.goto(65 * x, 37 * y - 252)  # scale the fern to fit nicely inside the window
-    pen.pendown()
-    pen.dot(3)
-    pen.penup()
-    r = random.random()
-    if r < 0.01:
-        x, y =  0.00 * x + 0.00 * y,  0.00 * x + 0.16 * y + 0.00
-    elif r < 0.86:
-        x, y =  0.85 * x + 0.04 * y, -0.04 * x + 0.85 * y + 1.60
-    elif r < 0.93:
-        x, y =  0.20 * x - 0.26 * y,  0.23 * x + 0.22 * y + 1.60
+from analysis import Shot
+
+l_tot = None
+
+fig, axs = plt.subplots(2, 2, sharex='all')
+
+axs = axs.flatten()
+ax = axs[0]
+
+sss = range(1, 135, 10)
+
+
+for index, s in enumerate(sss):
+    shot = Shot(s)
+    shot.list.energy_binned_times
+    shot.list.energy_binned_times
+    shot.list.energy_binned_times
+    if index %4 == 0:
+        ax = axs[index//4]
+    if l_tot is None:
+        l_tot = shot.list
     else:
-        x, y = -0.15 * x + 0.28 * y,  0.26 * x + 0.24 * y + 0.44
+        l_tot += shot.list
+    shot.list.plot_erg_spectrum(ax=ax, label=shot.shotnum, erg_max=1500)
+
+for ax in axs:
+    l_tot.plot_erg_spectrum(ax=ax, label='tot', erg_max=1500, scale=1.0/len(sss))
+    ax.legend()
+
+plt.show()
+

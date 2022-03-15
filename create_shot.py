@@ -6,7 +6,7 @@ import pylab as p
 
 from JSB_tools import ROOT_loop, TBrowser, mpl_hist
 import numpy as np
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from matplotlib import pyplot as plt
 from typing import Union, List
 from mpant_reader import MPANTList

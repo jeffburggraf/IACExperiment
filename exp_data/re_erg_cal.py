@@ -1,4 +1,4 @@
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from analysis import Shot
 from JSB_tools import mpl_hist
 import numpy as np

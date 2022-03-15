@@ -18,7 +18,7 @@ import uncertainties.unumpy as unp
 from uncertainties import ufloat
 from analysis import Shot
 from inp import vcd_cell, vcd_nickel, chamber_target
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 
 
 # l = MaestroListFile(Path(__file__).parent.parent/'exp_data/Nickel/Nickel.Lis')

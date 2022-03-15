@@ -5,21 +5,49 @@ from JSB_tools.MCNP_helper.materials import Material, Mylar, DepletedUranium, PH
 from JSB_tools.PHITS_tools import NucleusSource, CylindricalSource, Nuclide, GaussianEnergyDistribution
 from pathlib import Path
 from JSB_tools.MCNP_helper.units import um
+from JSB_tools import FileManager
+from typing import List
 
 #  =================================================================
 nuclides = ['Xe139', 'Sr94']
 nps = 60000
-dedx_scale = 0.15  # have done 0, 0.15, 0.3, 0.5
-which_mat = 'My'
-sim_folder = f'vary{dedx_scale:.1f}'
+# dedx_scale = 0.15  # have done 0, 0.15, 0.3, 0.5
+dedx_scales = [0.1]
+vary_materials = ['gas']  # must contain only the following, ['gas', 'my', 'du']
+# which_mat = 'my'
+# sim_folder = f'vary{which_mat}{dedx_scale:.1f}'
 #  =================================================================
+
+fman = FileManager(recreate=False)
+
+if dedx_scales is not None:
+    sim_folder = 'vary' + ''.join([f"{mat}{scale}" for mat, scale in zip(vary_materials, dedx_scales)])
+else:
+    sim_folder = None
+
+fman.add_path(sim_folder, **dict(zip(vary_materials, dedx_scales)), missing_ok=True)
+
+
+if dedx_scales is None:
+    dedx_scales = vary_materials = []
+
+for mat in ['my', 'gas', 'du']:
+    if mat not in vary_materials:
+        vary_materials.append(mat)
+        dedx_scales.append(1)
+
 
 du = DepletedUranium()
 he_ar = Material.gas(['Ar', 'He'], atom_fractions=[1, 1], pressure=1.1)
 mylar_mat = Mylar()
-he_ar.set_srim_dedx(scaling=dedx_scale)
-du.set_srim_dedx()
-mylar_mat.set_srim_dedx()
+
+mat_dict = {'my': mylar_mat, 'gas': he_ar, 'du': du}
+
+
+for mat, dedx_scale in zip(vary_materials, dedx_scales):
+    mat = mat_dict[mat]
+    mat.set_srim_dedx(scaling=dedx_scale)
+
 
 u_cell = RightCylinder(0.5, du, z0=1, dz=10*um, cell_name="Du foil")
 
@@ -67,7 +95,8 @@ for my_th in [0, 2.5, 5, 10, 20]:
         chamber.geometry = -chamber & +mylar_cell & +u_cell
 
     mylar_cell.dz = my_th
-    i.write_inp_in_scope(globals())
+    new_file_name = i.write_inp_in_scope(globals())
+    # fman.add_path(new_file_name.parent/'PTRAC.txt', my_th=my_th)
 
 
 

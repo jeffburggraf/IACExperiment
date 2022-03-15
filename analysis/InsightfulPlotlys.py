@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from JSB_tools.MCNP_helper.outp_reader import StoppingPowerData
 from JSB_tools import Nuclide, mpl_hist
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 
 
 time_bins = np.arange(0, 50, 2)
@@ -46,12 +46,15 @@ def sum_shots(shot_nums=None, eval_func='1==1', remove_baseline=False, exclude_s
 # MaestroListFile.multi_plotly([l1, l2], scales=[s1, s2], time_bin_width=6)
 
 def warm_cold_filter_transit_time():
-    """The transit times drop when filter is cold, all else equal. Why? """
+    """The transit times drop when filter is cold, all else equal. Why?
+
+    Consider making a time dependence plot showing this effect for paper.
+
+     """
     l1, s1 = sum_shots(shot_nums=[96, 96])  # Warm
     l2, s2 = sum_shots(shot_nums=[100, 101])    # cold
     MaestroListFile.multi_plotly([l1, l2], scales=[s1, s2],
                                  time_bin_width=6, erg_max=1600)
-
 
 
 def mylar_tests():
@@ -83,6 +86,8 @@ def fresh_filters(fresh_only=False):
     Only plot lines at hte beginning of the day (fresh filter).
     Shot 93 is a fresh filter.
     Should I include shot 136?
+
+
     Returns:
 
     """
@@ -96,6 +101,7 @@ def fresh_filters(fresh_only=False):
 
     l = None
     for shot in map(Shot, shots):
+        print(shot)
         if l is None:
             l = shot.list
         else:
@@ -104,8 +110,32 @@ def fresh_filters(fresh_only=False):
     l.plotly(erg_max=1800, remove_baseline=True, convolve_overlay_sigma=1)
 
 
-#  Todo: flow pattern
+def all_fast_warm_shots(**plotly_kwargs):
+    """
+    All warm filter shots with short tub and 0.5/0.5 Ar/He flow rate.
+    Returns:
+
+    """
+    list_ = None
+
+    for shot in Shot.find_shots(tube_len=4.16, cold_filter=False, mylar=0, flow_stop=0,  beam_duration=3,
+                                num_filters=2, eval_func='self.he_flow + self.ar_flow >= 1.0', ):
+        print(shot)
+        l = shot.list
+        if list_ is None:
+            list_ = l
+        else:
+            list_ += l
+
+    list_.plotly(**plotly_kwargs, time_bin_width=7, time_step=3)
+
+
+
+
+# Todo: flow pattern
 
 # mylar_tests()
+# all_fast_warm_shots()
 # warm_cold_filter_transit_time()
+
 fresh_filters()

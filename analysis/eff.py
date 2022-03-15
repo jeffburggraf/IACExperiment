@@ -10,7 +10,7 @@ from uncertainties import ufloat
 from lmfit.models import ExponentialModel
 from uncertainties import unumpy as unp
 from JSB_tools import mpl_hist
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from pathlib import Path
 
 

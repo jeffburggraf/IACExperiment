@@ -22,7 +22,8 @@ for path in path.iterdir():
         if m := re.match('([0-9]+)_inp', path.name):
             my_th = my_th_dict[int(m.groups()[0])]
             ptrac_path = path/'PTRAC.txt'
-            fman.add_path(ptrac_path.with_suffix('.root'), missing_ok=True, overwrite_ok=True, ptrac=True, my_thickness=my_th)
+            fman.add_path(ptrac_path.with_suffix('.root'), missing_ok=True, overwrite_ok=True, ptrac=True,
+                          my_thickness=my_th)
             phits_to_root(ptrac_path)
 
 # TBrowser()

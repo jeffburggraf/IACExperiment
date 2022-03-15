@@ -19,7 +19,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import re
 from pathlib import Path
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from JSB_tools.spe_reader import SPEFile
 from mpant_reader import MPA
 from datetime import datetime

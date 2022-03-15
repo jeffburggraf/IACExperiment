@@ -1,13 +1,14 @@
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 from analysis import Shot
 from JSB_tools import mpl_hist
 import numpy as np
 from matplotlib import pyplot as plt
 from JSB_tools.nuke_data_tools import Nuclide
 
-Shot.nickel_list().plotly(remove_baseline=True, convolve_overlay_sigma=1, time_step=2.5*60, erg_max=1200,
-                          time_bin_width=3*60)
+# Shot.nickel_list().plotly(remove_baseline=True, convolve_overlay_sigma=1, time_step=2.5*60, erg_max=1200,
+#                           time_bin_width=3*60)
 
+Shot
 # for shot in Shot.find_shots(eval_func="self.shotnum != 140"):
 #     shots_times[shot.shotnum] = shot.list.times[-1]
 #

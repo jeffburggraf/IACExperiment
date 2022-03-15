@@ -12,7 +12,7 @@ import uncertainties.unumpy as unp
 from uncertainties import ufloat
 from analysis import Shot
 from inp import vcd_cell, vcd_nickel, chamber_target
-from JSB_tools.list_reader import MaestroListFile
+from JSB_tools.maestro_reader import MaestroListFile
 
 
 c_per_second = (192/3.0)*1E-6
