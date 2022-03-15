@@ -48,7 +48,8 @@ nuclides_gammalines = {'Xe139': [0, 1, 3, 4, 5, 6, 7],
                        'I137': [0],
                        'Cs140': [0],
                        'Sr94': [0],
-                       'Rb89': [0, 1]
+                       'Rb89': [0, 1],
+                       'Zr99': [0, 1]
                        }
 """
 Kr92 @ 142.3 is the shortest half life observed at 1.8 s
@@ -57,6 +58,8 @@ very rapidly falling line at 306.7 might be Cs143, but its not quite the right e
 Peak around 258.4 is Xe138 (mostly), Pr149, Sb130, and La146_m1
 I137 and Kr92 have close lines near 1218. 
 Lines at 724 are a mixtue of Zr95 build up and Ce145
+306 keV unknown
+
 """
 #  =====================================================================================================================
 

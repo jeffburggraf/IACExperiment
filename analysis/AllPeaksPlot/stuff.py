@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from JSB_tools import mpl_hist, Nuclide
 from pathlib import Path
 
-n = Nuclide.from_symbol('Rb89')
+n = Nuclide.from_symbol('Zr99')
 erg = None
 
 if erg is not None:
