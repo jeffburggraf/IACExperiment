@@ -16,7 +16,7 @@ charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 
-ff = 'Ce145'   #  Kr89
+ff = 'Pr150'   #  Kr89
 decay_rate = True
 fraction_escape = 0.1
 
@@ -68,7 +68,6 @@ for parent, yield_ in yields.yields.items():
         except KeyError:
             data[daughter][parent] = yield_ * v
     i += 1
-
 
 
 def srt(dict_):
