@@ -69,6 +69,16 @@ if do_decay_corr:
 else:
     decay_corr = 1
 
+outp = OutP(Path(__file__).parent/'sims'/'du_shot131'/'outp')
+tally_up = outp.get_f4_tally('Active up')
+tally_down = outp.get_f4_tally('Active down')
+
+u238 = Nuclide.from_symbol('U238')
+
+neg_weight = sum(u238.gamma_induced_fiss_xs.interp(tally_up.energies)*tally_up.dx_per_src)
+pos_weight = sum(u238.gamma_induced_fiss_xs.interp(tally_down.energies)*tally_down.dx_per_src)
+print("pos/neg u foil fission rates: ", pos_weight, neg_weight)
+
 gamma_line = ff.decay_gamma_lines[gamma_index]
 fit_ergs = [gamma_line.erg.n]
 if nuclide == 'Xe139':
@@ -95,17 +105,15 @@ n_ff_meas *= decay_corr
 
 # shot.llnl_spe.plot_erg_spectrum()
 
-outp = OutP(Path(__file__).parent/'sims'/'du_shot131'/'outp')
-tally_up = outp.get_f4_tally('Active up')
-tally_down = outp.get_f4_tally('Active down')
+
 
 
 atom_density = tally_up.cell.atom_density
 
-u238 = Nuclide.from_symbol('U238')
 # u238.gamma_induced_fiss_xs.plot()
 yields = FissionYields('U238', 'gamma', tally_down.energies, independent_bool=True)
 # yields.plot(nuclide)
+
 
 ff_yield = np.average(yields.get_yield(nuclide),
                       weights=tally_down.nominal_fluxes*u238.gamma_induced_fiss_xs.interp(tally_down.energies))

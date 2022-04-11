@@ -1,5 +1,5 @@
 """
-Should do it all except for efficiency
+Should do it all (including erg cal), except for efficiency. See efficiencies/set_efficiency.py for that.
 """
 from analysis import _get_maesto_list_shot_paths
 from pathlib import Path

@@ -31,6 +31,7 @@ data_dir = Path(__file__).parent.parent/'exp_data'
 class Default:
     pass
 
+
 @cache
 def _get_maesto_list_shot_paths():
     out = {}
@@ -149,7 +150,7 @@ class Shot:
         # for k, v in shot_metadata.items():
         #     print(k.__repr__(), v)
         self.iac_filter_pos = shot_metadata['IAC Det Pos.']
-        self.llnl_filter_pos = shot_metadata['LLNL Det Pos.']
+        self.llnl_filter_pos = shot_metadata['LLNL Det Pos.'], CONFIG_ATTRIB
 
         if self.shotnum in Shot.bad_shots:
             warnings.warn(f"Bad shot {self.shotnum} used!")
@@ -210,17 +211,27 @@ class Shot:
             out = MPA(path)
         return out
 
+    valid_values = {'foil_pos': ['center', 'upstream'],
+                    'mylar': [0, 2.5, 5, 10, 20],
+                    'flow_stop': [0, 10, 20, 40],
+                    'tube_len': [4.16, 6.14, 9.44, 12.64],
+                    'flow': ['100001', '111111', '010010', '111010'],
+                    'beam_duration': [3, 5, 20],
+                    'num_filters': [2, 3, 4],
+                    'llnl_filter_pos': [2, 1]}
+
     @staticmethod
     def find_shots(good_shot_only=True, eval_func='1==1', flow=None, he_flow=None, ar_flow=None, tube_len=None,
                    cold_filter=None, mylar=None, foil_pos=None, flow_stop=None, num_filters=None, beam_duration=None,
-                   converter='W') -> List[Shot]:
+                   converter='W', llnl_filter_pos=1) -> List[Shot]:
         """
         None always means not to sue as search criteria.
 
         Args:
             good_shot_only: True means dont include "bad" shots.
 
-            eval_func: e.g.: self.he_flow + self.ar_flow >= 1.0
+            eval_func: string of python code to be evaluated with 'self' bound to current instance.
+                e.g.: self.he_flow + self.ar_flow >= 1.0
 
             flow: Flow patter. Options: 010010 (default), 100001 (offset), 111111 (All in all out),
                 or 111010 (All in one out)
@@ -244,7 +255,16 @@ class Shot:
         shots = []
         attribs = {'flow': flow, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
                    'cold_filter': cold_filter, 'mylar': mylar, 'foil_pos': foil_pos, 'flow_stop': flow_stop,
-                   'num_filters': num_filters, 'beam_duration': beam_duration, 'converter': converter}
+                   'num_filters': num_filters, 'beam_duration': beam_duration, 'converter': converter,
+                   'llnl_filter_pos': llnl_filter_pos}
+
+        for k, v in attribs.items():
+            if v is None:
+                continue
+            try:
+                assert v in Shot.valid_values[k], f'Invalid value, "{v}", for argument {k}'
+            except KeyError:
+                continue
 
         attribs = dict(filter(lambda k_v: k_v[1] is not None, attribs.items()))
 

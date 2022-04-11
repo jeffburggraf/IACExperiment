@@ -31,7 +31,8 @@ electron_erg = 21.5
 #  --- Calculated parameters ---
 eff_chamber_length = 6 + 4*o_ring_width + 2*chamber_mount_width  # effective chamber length
 # /---
-
+print(eff_chamber_length)
+assert False
 #  --- MATERIALS ---
 w_mat = Tungsten()
 du_mat = DepletedUranium()
@@ -160,7 +161,7 @@ if __name__ == '__main__':
     # below is for fission sim with DU target
     du_thickness = 0.5/10  # in cm
 
-    chamber_target.z0 = chamber_target.z0
+    chamber_target.z0 = chamber.zm
     chamber_target.dz = du_thickness - 20*units.um
     chamber_target.radius = 0.5
     chamber_target.material = du_mat
