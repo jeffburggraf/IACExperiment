@@ -6,7 +6,7 @@ Thoughts Nov 1:
 
 """
 import warnings
-from JSB_tools.nuke_data_tools import Nuclide, DecayedFissionYields, decay_nuclide
+from JSB_tools.nuke_data_tools import Nuclide, DecayedFissionYields, DecayNuclide
 from matplotlib import pyplot as plt
 from pathlib import Path
 from JSB_tools.MCNP_helper.outp_reader import OutP

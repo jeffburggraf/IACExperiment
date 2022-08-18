@@ -1,11 +1,3 @@
-"""
-PJX 2 is Space and time (space is not interesting here, so really just time).
-PJX 3 is energy and time. Plasma was too dim to see signal.
-Material is buried to "tamp" it. The layer keeps target from expanding and cooling, thus makes temperature more uniform
-SPC (Single-photon counting spectrometer) is just a normal camera.
-Look under the "DCHOPG" directory to get the dark room things.
-CCD-time integrated, data is in an obvious stripe.
-"""
 import re
 import warnings
 from pyhdf.SD import SD

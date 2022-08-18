@@ -32,7 +32,6 @@ electron_erg = 21.5
 eff_chamber_length = 6 + 4*o_ring_width + 2*chamber_mount_width  # effective chamber length
 # /---
 print(eff_chamber_length)
-assert False
 #  --- MATERIALS ---
 w_mat = Tungsten()
 du_mat = DepletedUranium()

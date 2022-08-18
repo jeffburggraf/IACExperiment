@@ -8,7 +8,7 @@ from JSB_tools.nuke_data_tools import FissionYields, Nuclide
 from JSB_tools.MCNP_helper import OutP
 from pathlib import Path
 from uncertainties import unumpy as unp
-from JSB_tools import decay_nuclide
+from JSB_tools import DecayNuclide
 from JSB_tools.spectra import EfficiencyCalMixin
 
 _p = Path('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/cal_files/shot120.eff')
@@ -23,14 +23,15 @@ n_electrons = 3*c_per_second / charge_per_electron
 
 # ====================================
 tmin = 4
-tmax = 15
+tmax = 300
 ntime_bins = 200
 srt_erg = True  # If True sort by gamma energy, else by yield.
 gamma_erg_range = 50, 2000
 rel_yield_thresh = 5E-3
-eff_corr = False
+eff_corr = True
 #  ====================================
 print(f"Time range: {tmin} - {tmax}|")
+
 
 outp = OutP(Path(__file__).parent.parent/'mcnp'/'sims'/'du_shot134'/'outp')
 tally = outp.get_f4_tally('Active down')
@@ -49,7 +50,7 @@ n_decays = {}
 
 for n, yield_ in y.yields.items():
     yield_ = sum(unp.nominal_values(yield_))
-    for n, hz in decay_nuclide(n)(times, decay_rate=True).items():
+    for n, hz in DecayNuclide(n)(times, decay_rate=True).items():
         tot_decays = yield_*np.trapz(hz, times)
 
         try:
@@ -68,7 +69,7 @@ for n, decays in n_decays.items():
             continue
         y = g.intensity*decays
         if eff_corr:
-            y *= effs(g.erg.n)
+            y *= effs.eval(g.erg.n)
         gamma_yields.append(y)
         gamma_lines.append(g)
 

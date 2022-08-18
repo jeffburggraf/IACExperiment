@@ -31,6 +31,11 @@ data_dir = Path(__file__).parent.parent/'exp_data'
 class Default:
     pass
 
+_FF_EXP_DECAY_RATES = None
+
+def get_yield(times):
+    pass
+
 
 @cache
 def _get_maesto_list_shot_paths():
@@ -101,8 +106,10 @@ class Shot:
             self.__dict__[key] = value
 
     @staticmethod
-    def background_spe():
-        return SPEFile(cwd.parent/'exp_data'/'tuesday'/'BG.Spe')
+    def background_spe(llnl=True):
+        if llnl:
+            return SPEFile(cwd.parent/'exp_data'/'tuesday'/'BG.Spe')
+        return MPA(cwd.parent/'exp_data'/'tuesday'/"MCA"/'BG001.Spe')
 
     def __init__(self, shot_num, load_erg_cal=True):
         """
@@ -225,7 +232,7 @@ class Shot:
                    cold_filter=None, mylar=None, foil_pos=None, flow_stop=None, num_filters=None, beam_duration=None,
                    converter='W', llnl_filter_pos=1) -> List[Shot]:
         """
-        None always means not to sue as search criteria.
+        None always means not to use as search criteria.
 
         Args:
             good_shot_only: True means dont include "bad" shots.
@@ -240,6 +247,8 @@ class Shot:
             ar_flow: Ar flow in SLPM
 
             tube_len: None for any. Options are: 4.16, 6.14, 9.44, 12.64  (in meters)
+                Can be Tuple of len 1, e.g. (1,) to refer to length of the second tube length, as in, [4.16, 6.14, 9.44, 12.64][1]
+
             cold_filter: True or False
             mylar: 0 for no mylar. options are: 0, 2.5, 5, 7.5, 10, 20
             foil_pos: "1cm" for upstream. , "center" for center.
@@ -252,7 +261,10 @@ class Shot:
         Returns:
 
         """
-        shots = []
+        # shots = []
+        if isinstance(tube_len, tuple) and len(tube_len) == 1 and type(tube_len[0]) == int:
+            tube_len = [4.16, 6.14, 9.44, 12.64][tube_len[0]]
+
         attribs = {'flow': flow, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
                    'cold_filter': cold_filter, 'mylar': mylar, 'foil_pos': foil_pos, 'flow_stop': flow_stop,
                    'num_filters': num_filters, 'beam_duration': beam_duration, 'converter': converter,
@@ -269,6 +281,7 @@ class Shot:
         attribs = dict(filter(lambda k_v: k_v[1] is not None, attribs.items()))
 
         if eval_func != '1==1':
+            assert isinstance(eval_func, str), "`eval_func` must be a string"
             assert 'self' in eval_func, "Bad eval_func. Example usage: 'self.ar_flow + self.he_flow >= 1.0'"
 
         eval_func = eval_func.replace('self', 'shot')
@@ -282,11 +295,13 @@ class Shot:
                 if all([getattr(shot, name) == value for name, value in attribs.items()]):
 
                     if eval(eval_func):
-                        shots.append(shot)
+                        # shots.append(shot)
+                        yield shot
 
             except AttributeError:
                 raise
-        return shots
+
+        # return shots
 
     @staticmethod
     def sum_shots_list(shots_list: List[Union[Shot, int]], truncate=False) -> MaestroListFile:
@@ -443,5 +458,6 @@ if __name__ == '__main__':
     shot = Shot.n_shots_array(None, None, )
     # s = Shot(134, )
     # s.list.plotly()
+
 
 

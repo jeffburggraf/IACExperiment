@@ -8,7 +8,7 @@ from pathlib import Path
 from JSB_tools import mpl_hist, calc_background
 from uncertainties import ufloat
 from uncertainties import unumpy as unp
-from pickle_shots import get_mpant_mca_shot_paths
+# from pickle_shots import get_mpant_mca_shot_paths
 
 # Xe139: 218.58
 # I136_m1: 1313   t1/2: 60

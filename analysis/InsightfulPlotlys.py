@@ -13,6 +13,9 @@ attribs1 = {'flow': '100001',  'mylar': False,
 
 
 def sum_shots(shot_nums=None, eval_func='1==1', remove_baseline=False, exclude_shots=None, **attribs):
+    if remove_baseline:
+        raise NotImplementedError
+
     if exclude_shots is None:
         exclude_shots = []
 
@@ -33,28 +36,38 @@ def sum_shots(shot_nums=None, eval_func='1==1', remove_baseline=False, exclude_s
         if l is None:
             l = shot.list
         else:
-            l += shot.list
+            l.__iadd__(shot.list, truncate_time=True)
     print()
     leg_label = f'Shots {",".join(map(str, shot_nums))}'
 
-    l.path = leg_label
-    return l, 1.0/len(shots)
+    # l.path = leg_label
+    return l, 1.0/len(shots), leg_label
 
 
 # l1, s1 = sum_shots(shot_nums=[126, 127, 128])
 # l2, s2 = sum_shots(shot_nums=[131, 132])
 # MaestroListFile.multi_plotly([l1, l2], scales=[s1, s2], time_bin_width=6)
 
-def warm_cold_filter_transit_time():
+def warm_cold_filter_transit_time(time_bin_width=6, he_flow=0.5):
     """The transit times drop when filter is cold, all else equal. Why?
 
     Consider making a time dependence plot showing this effect for paper.
 
      """
-    l1, s1 = sum_shots(shot_nums=[96, 96])  # Warm
-    l2, s2 = sum_shots(shot_nums=[100, 101])    # cold
+    # if he_flow == 0.5:
+    #     warm_shots = [93, 94]
+    #     cold_shots = [98, 99]
+    # elif he_flow == 1.0:
+    #     assert False
+    # else:
+    #     assert False
+    warm_shots = [124, 125, 126, 127]
+    cold_shots = [129, 130, 131, 132]
+    l1, s1, leg_label1 = sum_shots(shot_nums=cold_shots)    # cold
+    l2, s2, leg_label2 = sum_shots(shot_nums=warm_shots)  # Warm
     MaestroListFile.multi_plotly([l1, l2], scales=[s1, s2],
-                                 time_bin_width=6, erg_max=1600)
+                                 time_bin_width=time_bin_width, erg_max=1600,
+                                 leg_labels=[f"Cold-{leg_label1}", f"Warm-{leg_label2}"])
 
 
 def mylar_tests():
@@ -72,7 +85,7 @@ def mylar_tests():
         ls = []
         labels = []
         for k, v in shots_25.items():
-            l, s = sum_shots(v)
+            l, s, _ = sum_shots(v)
             ls.append(l)
             scales.append(s)
             labels.append(f"{k} um My ({flow} L/m)")
@@ -136,6 +149,6 @@ def all_fast_warm_shots(**plotly_kwargs):
 
 # mylar_tests()
 # all_fast_warm_shots()
-# warm_cold_filter_transit_time()
+warm_cold_filter_transit_time(15)
 
-fresh_filters()
+# fresh_filters()

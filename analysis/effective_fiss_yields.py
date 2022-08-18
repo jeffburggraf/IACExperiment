@@ -8,7 +8,7 @@ from JSB_tools.MCNP_helper import OutP
 from pathlib import Path
 from uncertainties import unumpy as unp
 from uncertainties import ufloat
-from JSB_tools import decay_nuclide
+from JSB_tools import DecayNuclide
 
 
 thresh_frac = 0.1
@@ -42,7 +42,7 @@ for n_name, yield_ in yields.items():
     nuclide = Nuclide.from_symbol(n_name)
     if nuclide.is_stable or not (1 < nuclide.half_life.n < 15*60):
         continue
-    func = decay_nuclide(n_name)
+    func = DecayNuclide(n_name)
 
     rates = func(times, yield_, decay_rate=True)
 
