@@ -30,15 +30,15 @@ class MPA(SPEFile):
                         livetime=self.mpa_live_times[self.primary_adc_number],
                         realtime=self.mpa_real_times[self.primary_adc_number],
                         channels=self.mpa_channels[self.primary_adc_number],
-                        system_start_time=self.system_start_time,
-                        load_eff_cal=False
+                        system_start_time=self.system_start_time, eff_path=self.eff_path
                         )
         return spe
 
-    def __init__(self, mca_path, primary_adc_number=1, aux_adc_number=3):
+    def __init__(self, mca_path, eff_path=None, primary_adc_number=1, aux_adc_number=3):
         assert primary_adc_number > 0, '<=0 is not a valid ADC index'
         assert aux_adc_number > 0, '<=0 is not a valid ADC index'
         mca_path = Path(mca_path)
+        self.eff_path = Path(eff_path) if eff_path is not None else None
         self.path = (mca_path.parent / f'{mca_path.with_suffix("").name}_mpa').with_suffix('.Spe')
         self.primary_adc_number = primary_adc_number
         self.aux_adc_number = aux_adc_number

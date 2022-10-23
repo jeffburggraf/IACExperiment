@@ -20,10 +20,8 @@ from lmfit.models import ExponentialModel
 from typing import Dict
 from lmfit import Model
 from uncertainties.umath import log
-
-
-
-
+from uncertainties import UFloat
+from lmfit.model import save_modelresult
 #  =======================================
 debug = False
 #  =======================================
@@ -46,14 +44,39 @@ def add_point(erg, window_kev, baseline_method='root', baseline_kwargs=None):
     x.append(erg)
     y.append(sum(c_iac) / sum(c_llnl))
 
+# def fit_func(x, a, b, c=0):
+#     def f(_x):
+#         return a*log(_x*b + c * _x**2)
+#
+#     if isinstance(a, UFloat):
+#         return np.array([f(xi) if xi > 0 else 1 for xi in x])
+#     else:
+#         if x[0] < 0:
+#             imin = np.searchsorted(x, 0)
+#             out = np.ones_like(x)
+#             out[imin:] = f(x[imin:])
+#         else:
+#             return a*np.log(x*b)
+#         return out
+
 
 def fit_func(x, a, b):
-    return np.array([a*log(xi*b) for xi in x])
+    if isinstance(a, UFloat):
+        return np.array([a*log(xi*b) if xi > 0 else 1 for xi in x])  # + xi**2*c
+    else:
+        if x[0] < 0:
+            imin = np.searchsorted(x, 0)
+            out = np.ones_like(x)
+            out[imin:] = a*np.log(b*_x)
+        else:
+            return a*np.log(x*b)
+        return out
 
 
 def efficiency_result(x):
-    return fit_func(x, ufloat(fit.params['a'].value, fit.params['a'].stderr),
-                    ufloat(fit.params['b'].value, fit.params['b'].stderr))
+    return fit_func(x, ufloat(fit.params['a'].value, fit.params['a'].stderr if fit.params['a'].stderr is not None else 0),
+                    ufloat(fit.params['b'].value, fit.params['b'].stderr if fit.params['b'].stderr is not None else 0),
+                    )
 
 
 if __name__ == '__main__':
@@ -70,8 +93,8 @@ if __name__ == '__main__':
     print("IAC MPA shot times: ", [(num, shots_dict[num].llnl_spe.realtime) for num in shots_iac])
     print("IAC Lis shot times: ", [(num, shots_dict[num].list.total_realtime) for num in shots_llnl])
 
-    ax = Shot(80).iac_spe.plot_erg_spectrum(make_rate=True, leg_label='Shot 80')
-    Shot(81).iac_spe.plot_erg_spectrum(ax=ax, make_rate=True, leg_label='Shot 81')
+    ax = Shot(80).iac_spe.plot_erg_spectrum(make_rate=True, leg_label='Shot 80', eff_corr=False)
+    Shot(81).iac_spe.plot_erg_spectrum(ax=ax, make_rate=True, leg_label='Shot 81', eff_corr=False)
     ax.set_title("Two equiv. shots. (IAC det.)")
 
     iac_spec = Shot(81).iac_spe
@@ -100,8 +123,9 @@ if __name__ == '__main__':
     fit = model.fit(x=x, data=unp.nominal_values(y), weights=1.0 / unp.std_devs(y), params=params)
     # fit.plot_fit()
 
-    with open("rel_eff.pickle", 'wb') as f:
-        pickle.dump(fit, f)
+    # with open("rel_eff.pickle", 'wb') as f:
+    #     pickle.dump(fit, f)
+    save_modelresult(fit, 'rel_eff.pickle')
 
     print(fit.fit_report())
 

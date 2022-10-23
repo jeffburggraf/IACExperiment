@@ -280,11 +280,21 @@ class Shot:
 
         attribs = dict(filter(lambda k_v: k_v[1] is not None, attribs.items()))
 
-        if eval_func != '1==1':
-            assert isinstance(eval_func, str), "`eval_func` must be a string"
-            assert 'self' in eval_func, "Bad eval_func. Example usage: 'self.ar_flow + self.he_flow >= 1.0'"
+        def cut_func():
+            return eval(eval_func)
 
-        eval_func = eval_func.replace('self', 'shot')
+        if eval_func != '1==1':
+            if isinstance(eval_func, str):
+                assert 'self' in eval_func, "Bad eval_func. Example usage: 'self.ar_flow + self.he_flow >= 1.0'"
+                eval_func = eval_func.replace('self', 'shot')
+
+            elif hasattr(eval_func, "__call__"):
+
+                def cut_func():
+                    return eval_func(shot)
+
+            else:
+                assert False, "`eval_func` must be a string or a function"
 
         for shot_num in ALL_SHOTS_METADATA:
 
@@ -294,7 +304,7 @@ class Shot:
             try:
                 if all([getattr(shot, name) == value for name, value in attribs.items()]):
 
-                    if eval(eval_func):
+                    if cut_func():
                         # shots.append(shot)
                         yield shot
 

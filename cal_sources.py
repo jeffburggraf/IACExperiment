@@ -6,6 +6,7 @@ from typing import Union
 from uncertainties import ufloat
 from typing import Dict
 
+
 class CalSource:
     instances: Dict[str, CalSource] = {}
 

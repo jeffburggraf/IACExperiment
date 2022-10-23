@@ -6,11 +6,11 @@ from pathlib import Path
 import re
 from multiprocessing import Process
 from JSB_tools.maestro_reader import MaestroListFile
-from JSB_tools.spe_reader import EnergyCalMixin
+from efficiencies.get_efficiencies import set_eff
 
 cwd = Path(__file__).parent
 
-class_dir = cwd / 'NewErgCals'
+class_dir = cwd / 'exp_data'/'NewErgCals'
 
 
 def get_erg_cal(p):
@@ -45,13 +45,15 @@ if True:
 def pickle_list(shots_paths):
     for shot, path in shots_paths:
         if not path.exists():
-            continue# _get_maesto_list_shot_paths().items():
-        s = MaestroListFile(path)
+            continue  # _get_maesto_list_shot_paths().items():
+        list_file = MaestroListFile(path)
+
         try:
-            s.erg_calibration = erg_cals[shot]
+            list_file.erg_calibration = erg_cals[shot]
         except KeyError:
             pass
-        s.pickle(path)
+        set_eff(list_file, shot)
+        list_file.pickle(path)
         print(f"Shot {shot}")
 
 

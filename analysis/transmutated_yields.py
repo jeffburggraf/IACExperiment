@@ -2,8 +2,8 @@ import re
 import warnings
 
 import matplotlib.pyplot as plt
-from JSB_tools import DecayNuclide
-from JSB_tools import Nuclide, FissionYields
+from JSB_tools import DecayNuclide, Nuclide
+from JSB_tools.nuke_data_tools.fission_yields import FissionYields
 from pathlib import Path
 from JSB_tools.MCNP_helper.outp_reader import OutP
 import scipy
@@ -24,14 +24,14 @@ n_electrons = 3*c_per_second / charge_per_electron
 
 # =======================================================
 # List of ffs (as strings), or an int to plot top N fission fragments.
-ffs = 'Nb102'
+ffs = 20
 # mpl_style(usetex=True, fontscale=1.)
 save_fig = False
 decay_rate = True  # If True, plot decay rate instead of nuclei number.
 rel_yield_thresh = 0.01  # yields with integrated fractions of total below this value are not plotted.
 arb_yaxis = False  # normalizes the y to smaller numbers.
 fraction_escape = 0.1
-t_max = 600
+t_max = 300
 t_b_width = 1
 plot_integral_yield = False
 figsize = (8, 8)  # default = (12, 8)
@@ -147,9 +147,9 @@ if __name__ == '__main__':
             _n = Nuclide.from_symbol(_n)
         if _n.name in gamma_printed:
             return
-        print(f"{_n}:")
+        print(f"{_n} Gamma lines:")
         for g in [g for g in _n.decay_gamma_lines if g.intensity.n > 0.01]:
-            print(f'\t{g}')
+            print(f'\t{g.erg.n:.2f} keV I={g.intensity.n:.3f}')
 
         gamma_printed.append(_n.name)
 

@@ -143,12 +143,71 @@ def all_fast_warm_shots(**plotly_kwargs):
     list_.plotly(**plotly_kwargs, time_bin_width=7, time_step=3)
 
 
+def cold_v_warm():
+    cold_shots = range(129, 135)
+    warm_shots = range(124, 129)
+    warm_list = None
+    cold_list = None
 
+    for s in cold_shots:
+        if cold_list is None:
+            cold_list = Shot(s).list
+        else:
+            cold_list += Shot(s).list
+
+    for s in warm_shots:
+        if warm_list is None:
+            warm_list = Shot(s).list
+        else:
+            warm_list += Shot(s).list
+
+    MaestroListFile.multi_plotly([cold_list, warm_list], leg_labels=['Cold', 'Warm'])
+
+
+def inline_vs_offset(flow_rate=0.5, tube_len=4.16, max_shots=5, foil_pos='center', baseline_subtract=False):
+    offset_list = None
+    inline_list = None
+
+    n_inline = 0
+    n_offset = 0
+
+    for shot in Shot.find_shots(tube_len=tube_len, cold_filter=False, mylar=0, flow_stop=0, beam_duration=3,
+                                num_filters=2, he_flow=flow_rate, ar_flow=flow_rate, flow='010010', foil_pos=foil_pos):
+        print('Inline:', shot)
+        if n_inline > max_shots:
+            break
+
+        n_inline += 1
+        if inline_list is None:
+            inline_list = shot.list
+        else:
+            inline_list.__iadd__(shot.list, truncate_time=True)
+        # inline_list += shot.list
+
+    for shot in Shot.find_shots(tube_len=tube_len, cold_filter=False, mylar=0, flow_stop=0, beam_duration=3,
+                                num_filters=2, he_flow=flow_rate, ar_flow=flow_rate, flow='100001', foil_pos=foil_pos):
+        print('Offset:', shot)
+        n_offset += 1
+        if offset_list is None:
+            offset_list = shot.list
+        else:
+            offset_list.__iadd__(shot.list, truncate_time=True)
+
+        if n_offset > max_shots:
+            break
+
+    MaestroListFile.multi_plotly([offset_list, inline_list],
+                                 leg_labels=['Offset', 'Inline'],
+                                 scales=[1.0/n_offset, 1.0/n_inline],
+                                 remove_baseline=baseline_subtract)
 
 # Todo: flow pattern
 
+inline_vs_offset()
+# cold_v_warm()
+
 # mylar_tests()
 # all_fast_warm_shots()
-warm_cold_filter_transit_time(15)
+# warm_cold_filter_transit_time(15)
 
 # fresh_filters()
