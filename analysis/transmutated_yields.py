@@ -2,8 +2,8 @@ import re
 import warnings
 
 import matplotlib.pyplot as plt
-from JSB_tools import DecayNuclide, Nuclide
-from JSB_tools.nuke_data_tools.fission_yields import FissionYields
+from JSB_tools.nuke_data_tools import DecayNuclide, Nuclide
+from JSB_tools.nuke_data_tools.nuclide.fission_yields import FissionYields
 from pathlib import Path
 from JSB_tools.MCNP_helper.outp_reader import OutP
 import scipy
@@ -48,7 +48,7 @@ if hasattr(ffs, '__iter__'):
 
 outp = OutP(Path(__file__).parent.parent/'mcnp'/'sims'/'du_shot131'/'outp')
 tally_down = outp.get_f4_tally('Active down')
-u238 = Nuclide.from_symbol('U238')
+u238 = Nuclide('U238')
 
 yields = FissionYields('U238', 'gamma', tally_down.energies)
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
     def gamma_print(_n):
         if not isinstance(_n, Nuclide):
-            _n = Nuclide.from_symbol(_n)
+            _n = Nuclide(_n)
         if _n.name in gamma_printed:
             return
         print(f"{_n} Gamma lines:")
@@ -154,7 +154,7 @@ if __name__ == '__main__':
         gamma_printed.append(_n.name)
 
     for ff in ffs:
-        ff = Nuclide.from_symbol(ff)
+        ff = Nuclide(ff)
         if not save_fig:
             ax = tab_plot.new_ax(ff.name)
         else:
@@ -214,7 +214,7 @@ if __name__ == '__main__':
             extra_leg_label = f" ({lbl})"
 
             if parent_name != 'fission':
-                legend_name = Nuclide.from_symbol(parent_name).latex_name
+                legend_name = Nuclide(parent_name).latex_name
                 linewidth = 1
                 gamma_print(parent_name)
             else:

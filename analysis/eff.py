@@ -20,16 +20,16 @@ def sanbox1(llnl=True):
     else:
         base_dir = "EffCalFriday"
 
-    print(Nuclide.from_symbol('Ni57').decay_gamma_lines)
+    print(Nuclide('Ni57').decay_gamma_lines)
     co57_src = CalSource.get_source('K4-896')
     cs137_src = CalSource.get_source('129792')
     y88_src = CalSource.get_source('190607000')
 
-    co_57_g1 = Nuclide.from_symbol('Co57').decay_gamma_lines[0]
-    co_57_g2 = Nuclide.from_symbol('Co57').decay_gamma_lines[1]
-    y88_g1 = Nuclide.from_symbol('Y88').decay_gamma_lines[0]
-    ba_137m_g1 = Nuclide.from_symbol('Ba137_m1').decay_gamma_lines[0]
-    ni_g1377, ni_g127 = Nuclide.from_symbol('Ni57').decay_gamma_lines[:2]
+    co_57_g1 = Nuclide('Co57').decay_gamma_lines[0]
+    co_57_g2 = Nuclide('Co57').decay_gamma_lines[1]
+    y88_g1 = Nuclide('Y88').decay_gamma_lines[0]
+    ba_137m_g1 = Nuclide('Ba137_m1').decay_gamma_lines[0]
+    ni_g1377, ni_g127 = Nuclide('Ni57').decay_gamma_lines[:2]
 
     print(ba_137m_g1)
 
@@ -92,9 +92,9 @@ def sanbox1(llnl=True):
     plt.plot(_x, fit.eval(x=_x, params=params))
     plt.plot(x, y, ls='None', marker='o')
     print(fit.fit_report())
-    eu152 = Nuclide.from_symbol('Eu152')
+    eu152 = Nuclide('Eu152')
     ax_eu = eu152.plot_decay_gamma_spectrum(min_intensity=0.02)
-    ax_y88 = Nuclide.from_symbol('Y88').plot_decay_gamma_spectrum(min_intensity=0.02)
+    ax_y88 = Nuclide('Y88').plot_decay_gamma_spectrum(min_intensity=0.02)
 
     eu_x = []
     eu_y = []
@@ -114,7 +114,7 @@ def sanbox1(llnl=True):
             eu_x.append(g.erg.n)
             eu_y.append(c)
 
-    for g in Nuclide.from_symbol('Y88').decay_gamma_lines:
+    for g in Nuclide('Y88').decay_gamma_lines:
         if g.intensity > 0.02:
             c = llnl_y88.get_counts(g.erg.n-3, g.erg.n+3, remove_baseline=False, deadtime_corr=True, debug_plot=False)
             c -= llnl_y88.get_baseline_median(g.erg.n - 3, g.erg.n + 3, window_kev=90)
@@ -132,7 +132,7 @@ def sanbox1(llnl=True):
     ax_eu.plot(eu_x, eu_y, ls='None', marker='o')
 
     y88_y = unp.nominal_values(y88_x)
-    y88_y *= sum(filter(lambda x: x > 0.02, map(lambda x: x.intensity.n, Nuclide.from_symbol('Y88').decay_gamma_lines)))/sum(y88_y)
+    y88_y *= sum(filter(lambda x: x > 0.02, map(lambda x: x.intensity.n, Nuclide('Y88').decay_gamma_lines)))/sum(y88_y)
     ax_y88.plot(y88_x, y88_y, ls='None', marker='d')
 
     plt.show()

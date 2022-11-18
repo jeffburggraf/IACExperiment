@@ -45,7 +45,7 @@ shot.list.plot_erg_spectrum(eff_corr=True)
 
 ni_meas_scale = n_electrons / model_correction
 
-ff = Nuclide.from_symbol(nuclide)
+ff = Nuclide(nuclide)
 
 
 def decay_model(x, time_shift, scale, lambda_):
@@ -73,7 +73,7 @@ outp = OutP(Path(__file__).parent/'sims'/'du_shot131'/'outp')
 tally_up = outp.get_f4_tally('Active up')
 tally_down = outp.get_f4_tally('Active down')
 
-u238 = Nuclide.from_symbol('U238')
+u238 = Nuclide('U238')
 
 neg_weight = sum(u238.gamma_induced_fiss_xs.interp(tally_up.energies)*tally_up.dx_per_src)
 pos_weight = sum(u238.gamma_induced_fiss_xs.interp(tally_down.energies)*tally_down.dx_per_src)

@@ -1,5 +1,5 @@
 """
-For 0.5 total gas flow with pattern 010010, the chamber clearing time is about 10 seconds
+For 0.5 total gas flow_pat with pattern 010010, the chamber clearing time is about 10 seconds
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,8 @@ from JSB_tools.regression import LinearFit
 from uncertainties import ufloat
 from typing import Dict, List
 import uncertainties.unumpy as unp
-from JSB_tools import Nuclide, FissionYields
+from JSB_tools.nuke_data_tools import Nuclide
+from JSB_tools.nuke_data_tools.nuclide.fission_yields import FissionYields
 from lmfit.models import LinearModel
 
 nuclide_lines = {'Xe140': 806, "Xe139": 218.5, 'Nb99': 137.7, 'Sr94': 1427.7}
@@ -34,7 +35,7 @@ erg = nuclide_lines[nuclide]
 shots_dict: Dict[float, List[Shot]] = {k: list(map(Shot, value)) for k, value in shots_specification.items()}
 data = {}
 
-nuclide = Nuclide.from_symbol(nuclide)
+nuclide = Nuclide(nuclide)
 fiss_yields = FissionYields('U238', 'gamma')
 print('Daughter yield: ', sum(fiss_yields.get_yield(nuclide.name)))
 

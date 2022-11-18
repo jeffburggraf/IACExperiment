@@ -1,6 +1,7 @@
 import re
 import matplotlib.pyplot as plt
-from JSB_tools import Nuclide, TabPlot
+from JSB_tools import TabPlot
+from JSB_tools.nuke_data_tools import Nuclide
 from analysis import Shot
 from uncertainties import unumpy as unp
 from pathlib import Path
@@ -14,11 +15,11 @@ spe_path = Path(spe_path)
 
 
 if spe_path.name == 'Nickel.Spe':
-    n = Nuclide.from_symbol("Ni57")
+    n = Nuclide("Ni57")
 else:
     n = re.match("([A-Z][a-z]?[0-9]+)-", spe_path.name)
     assert n
-    n = Nuclide.from_symbol(n.groups()[0])
+    n = Nuclide(n.groups()[0])
 
 eff_path_old = "/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/cal_files/shot121.eff"
 eff_path_new = "/Users/burggraf1/PycharmProjects/IACExperiment/efficiencies/angel.eff"

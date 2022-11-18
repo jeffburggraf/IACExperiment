@@ -27,7 +27,7 @@ def get_fit_spec(e, w):
     return x_all[b0:b1], y_all[b0:b1], b0, b1
 
 
-shots = Shot.find_shots(flow='100001',
+shots = Shot.find_shots(flow_pat='100001',
                         tube_len=6.14,
                         flow_stop=None,
                         foil_pos='upstream',
@@ -37,7 +37,7 @@ shots = Shot.find_shots(flow='100001',
                         eval_func="self.he_flow == self.ar_flow and self.ar_flow in [0.5, 0.25]")
 for n in nuclides:
     gamma_index = gamma_indexes.get(n, 0)
-    n = Nuclide.from_symbol(n)
+    n = Nuclide(n)
     gamma_line = n.decay_gamma_lines[gamma_index]
     gamma_erg = gamma_line.erg.n
     peak_width =  Shot.get_peak_width(gamma_erg)
@@ -126,7 +126,7 @@ for n in nuclides:
                       f"tmax: {shot.max_time:.1f} or {shot.max_time / n.half_life.n:.1f}$t_{{1/2}}$;"
                       f" n_decays:{n_decays:.2e}")
 
-        attribs = {'cold': shot.cold_filter, 'flow': [shot.he_flow, shot.ar_flow], }
+        attribs = {'cold': shot.cold_filter, 'flow_pat': [shot.he_flow, shot.ar_flow], }
 
         print(f"\tyield: {n_decays}, shot{shot.shotnum}, {attribs}")
 

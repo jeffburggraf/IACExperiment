@@ -4,20 +4,16 @@ each relevant gamma line (xy_points.pickle).
 """
 import pickle
 import warnings
-
 import matplotlib.pyplot as plt
-import uncertainties
-
-from JSB_tools import Nuclide, TabPlot
+from JSB_tools import TabPlot
+from JSB_tools.nuke_data_tools import Nuclide
 from JSB_tools.spe_reader import SPEFile
 from pathlib import Path
-import re
 from openpyxl import load_workbook
 from cal_sources import CalSource
-from scipy.signal import find_peaks
 import uncertainties.unumpy as unp
 import numpy as np
-from JSB_tools.regression import LogPolyFit, PeakFit
+from JSB_tools.regression import LogPolyFit
 
 
 data_path = Path(__file__).parent/'data'
@@ -77,9 +73,9 @@ def get_files():
 
 def get_gamma_lines_and_window(source):
     if source.name == 'CS137':
-        nuclide = Nuclide.from_symbol("Ba137_m1")
+        nuclide = Nuclide("Ba137_m1")
     elif source.name == 'CD109':
-        nuclide = Nuclide.from_symbol('Ag109_m1')
+        nuclide = Nuclide('Ag109_m1')
     else:
         nuclide = source.nuclide
 
@@ -90,7 +86,7 @@ def get_gamma_lines_and_window(source):
 
     gamma_lines = [g for g in nuclide.decay_gamma_lines if g.intensity > threshold_intensity or source.name == 'CD109']
     if source.name == 'TH228':
-        gamma_lines = [Nuclide.from_symbol('Ra224').decay_gamma_lines[0]]
+        gamma_lines = [Nuclide('Ra224').decay_gamma_lines[0]]
         window_kev = 1.9
     elif source.name == 'RA226':
         gamma_lines = [nuclide.decay_gamma_lines[0]]
@@ -116,7 +112,7 @@ pickle_xypoints = True
 exception_gamma_lines = [('Ba133', 79.61)]  # Excluded gamma lines. Round to two decimals.
 #  ===============================================
 
-# exception_gamma_lines = [Nuclide.from_symbol(n).get_gamma_nearest(erg) for n, erg in exception_gamma_lines]
+# exception_gamma_lines = [Nuclide(n).get_gamma_nearest(erg) for n, erg in exception_gamma_lines]
 print("Excluded gamma lines:")
 for g in exception_gamma_lines:
     print(f"\t{g}")

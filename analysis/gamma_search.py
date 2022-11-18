@@ -1,18 +1,27 @@
-import pickle
-
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.integrate import quad
-from JSB_tools.nuke_data_tools.gamma_spec import gamma_search
-from JSB_tools.nuke_data_tools import FissionYields, Nuclide
+from JSB_tools.nuke_data_tools import Nuclide, DecayNuclide
+from JSB_tools.nuke_data_tools.nuclide.fission_yields import FissionYields
 from JSB_tools.MCNP_helper import OutP
 from pathlib import Path
 from uncertainties import unumpy as unp
-from JSB_tools import DecayNuclide
 from JSB_tools.spectra import EfficiencyCalMixin
 
-_p = Path('/Users/burggraf1/PycharmProjects/IACExperiment/exp_data/friday/cal_files/shot120.eff')
-effs = EfficiencyCalMixin.stand_alone(np.linspace(0, 3000, 3000), _p)
+_p = Path('/Users/burggraf1/PycharmProjects/IACExperiment/efficiencies/eff_main.eff')
+effs = EfficiencyCalMixin()
+effs.unpickle_efficiency(_p)
+
+"""
+
+La144, 397 keV
+  4.5 +/- 0.1
+  4.8 +/- 0.2
+  3.5 +/- 0.2
+  3.2 +/- 0.2
+
+Good consistency for Sr93 @ 590 keV
+
+
+"""
 
 # effs.plot_efficiency()
 # plt.show()
@@ -22,12 +31,12 @@ charge_per_electron = 1.602E-19
 n_electrons = 3*c_per_second / charge_per_electron
 
 # ====================================
-tmin = 4
+tmin = 100
 tmax = 300
 ntime_bins = 200
 srt_erg = True  # If True sort by gamma energy, else by yield.
 gamma_erg_range = 50, 2000
-rel_yield_thresh = 5E-3
+rel_yield_thresh = 3E-3
 eff_corr = True
 #  ====================================
 print(f"Time range: {tmin} - {tmax}|")
@@ -37,7 +46,7 @@ outp = OutP(Path(__file__).parent.parent/'mcnp'/'sims'/'du_shot134'/'outp')
 tally = outp.get_f4_tally('Active down')
 
 
-xs = unp.nominal_values(Nuclide.from_symbol('U238').gamma_induced_fiss_xs.interp(tally.energies))
+xs = unp.nominal_values(Nuclide('U238').gamma_induced_fiss_xs(tally.energies))
 weights = xs*tally.dx_per_src*n_electrons*tally.cell.atom_density*0.1
 
 
@@ -62,14 +71,14 @@ gamma_lines = []
 gamma_yields = []
 
 for n, decays in n_decays.items():
-    nuclide = Nuclide.from_symbol(n)
+    nuclide = Nuclide(n)
     gs = nuclide.decay_gamma_lines
     for g in nuclide.decay_gamma_lines:
         if not gamma_erg_range[0] <= g.erg.n <= gamma_erg_range[1]:
             continue
         y = g.intensity*decays
         if eff_corr:
-            y *= effs.eval(g.erg.n)
+            y *= effs(g.erg.n)
         gamma_yields.append(y)
         gamma_lines.append(g)
 
@@ -91,7 +100,7 @@ for i in srt:
 
     number_decay = n_decays[g.parent_nuclide_name]
 
-    hl = Nuclide.from_symbol(g.parent_nuclide_name).half_life.n
+    hl = Nuclide(g.parent_nuclide_name).half_life.n
     erg = f"{g.erg:.2f} keV"
     print(f'{erg: <9}; rel/abs γ yield: {rel_g_yield:.1e} / {abs_g_yield.n:.1e}; t-1/2 = {hl:<8}; '
           f'decay yield: {number_decay:.1e};  {g}')

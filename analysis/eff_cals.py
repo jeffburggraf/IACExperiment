@@ -20,7 +20,7 @@ class CalData:
         self.source: CalSource = sources[nuclide]
         self.llnl_det = llnl_det
         self.evening = evening
-        self.nuclide = Nuclide.from_symbol(nuclide)
+        self.nuclide = Nuclide(nuclide)
         self.position = position
         assert self.day in ['tuesday', 'wednesday', 'thursday', 'friday']
         cal_spe = None
@@ -83,7 +83,7 @@ class CalData:
             if self.nuclide.name != 'Cs137':
                 gamma_line = self.nuclide.decay_gamma_lines[gamma_index]
             else:
-                gamma_line = Nuclide.from_symbol('Ba137_m1').decay_gamma_lines[gamma_index]
+                gamma_line = Nuclide('Ba137_m1').decay_gamma_lines[gamma_index]
         else:
             gamma_line = self.nuclide.get_gamma_nearest(gamma_index_or_energy)
 

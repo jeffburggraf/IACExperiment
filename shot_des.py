@@ -11,7 +11,7 @@ sheet = wb['Sheet1']
 
 def check_attribs(attrib, value):
     try:
-        t = {'flow': List[str]}[attrib]
+        t = {'flow_pat': List[str]}[attrib]
     except KeyError:
         return
     check_type(attrib, value, t)  #  raises error
@@ -60,7 +60,7 @@ class ShotInfo:
                          entries_dict['Downstream Outlet'])))
 
         self.flow = flow
-        self.entries_dict['flow'] = self.flow
+        self.entries_dict['flow_pat'] = self.flow
         # self.entries_dict['foil pos'] = self.ufoil_pos
         if self.entries_dict['Filter temp'] is None:
             self.entries_dict['Filter temp'] = 'Room'
@@ -68,7 +68,7 @@ class ShotInfo:
 
     def __repr__(self, labels=None):
         if labels is None:
-            labels = ['He (SLPM)', 'Ar (SLPM)', 'flow', 'Mylar (um)', 'Filter temp', 'foil pos']
+            labels = ['He (SLPM)', 'Ar (SLPM)', 'flow_pat', 'Mylar (um)', 'Filter temp', 'foil pos']
         outs = [f"Shot: {self.shot_num}"]
         for k, v in self.entries_dict.items():
             if k in labels:

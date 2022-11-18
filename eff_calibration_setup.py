@@ -14,7 +14,7 @@ steps:
 
 """
 from __future__ import annotations
-from JSB_tools import Nuclide
+from JSB_tools.nuke_data_tools import Nuclide
 import numpy as np
 from matplotlib import pyplot as plt
 import re
@@ -43,7 +43,7 @@ plot_peaks = False  # For debugging.
 
 if __name__ == '__main__':
     print("Print Nuclide ===============================")
-    _n = Nuclide.from_symbol(print_nuclide)
+    _n = Nuclide(print_nuclide)
     print("\tDecay daughers: ", _n.decay_daughters)
     print(f"\t{_n.name} gammas: ")
     for g in _n.decay_gamma_lines:
@@ -161,7 +161,7 @@ def save_eff_points(data_dir_name, gamma_func, exclude_source_func=None, debug=F
     full_erg_effs = []
 
     for m, f in file_matches:
-        nuclide = Nuclide.from_symbol(m.groups()[0])
+        nuclide = Nuclide(m.groups()[0])
         if not exclude_source_func(str(nuclide.name)):
             continue
 

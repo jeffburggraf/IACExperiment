@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from JSB_tools import mpl_hist, Nuclide
+from JSB_tools import mpl_hist
+from JSB_tools.nuke_data_tools import Nuclide
 from pathlib import Path
 from analysis import Shot
 from uncertainties import unumpy as unp
@@ -19,7 +20,7 @@ plotly = True
 sigma_erg = 3
 #  ==============================================================================
 
-n = Nuclide.from_symbol(ff)
+n = Nuclide(ff)
 gamma_line = n.decay_gamma_lines[gamma_index]
 
 xs = np.array([0, 2.5, 5, 10, 20])  # my thicknesses

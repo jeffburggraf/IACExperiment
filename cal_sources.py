@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 import re
-from JSB_tools import Nuclide
+from JSB_tools.nuke_data_tools import Nuclide
 from typing import Union
 from uncertainties import ufloat
 from typing import Dict
@@ -37,7 +37,7 @@ class CalSource:
             c *= 1E3
 
         self.name = nuclide_name
-        self.nuclide = Nuclide.from_symbol(nuclide_name)
+        self.nuclide = Nuclide(nuclide_name)
         self.serial_num = str(serial_num).lower()
         self.ref_activity = activity * c
         self.ref_date = ref_date
@@ -73,22 +73,21 @@ class CalSource:
         return f'{self.name}; {self.get_activity():.3E} Bq'
 
 
-if False:
-    CalSource("Y88", serial_num=190607000, activity=433, ref_date=datetime(2019, 7, 1), unit='kBq')
-    CalSource("Na22", serial_num=129742, activity=1.146, ref_date=datetime(2008, 7, 1), unit='uCi')
-    CalSource("Cs137", serial_num=129792, activity=92.11, ref_date=datetime(2008, 7, 1), unit='nCi')
-    CalSource("Cd109", serial_num=129757, activity=10.40, ref_date=datetime(2008, 7, 1), unit='uCi')
-    CalSource("Mn54", serial_num="J4-348", activity=9.882, ref_date=datetime(2012, 9, 1), unit='uCi')
-    CalSource("Co57", serial_num="K4-895", activity=1.135, ref_date=datetime(2013, 7, 15), unit='uCi')
-    CalSource("Co57", serial_num="K4-896", activity=11.11, ref_date=datetime(2013, 7, 15), unit='uCi')
-    CalSource("Eu152", serial_num="129753", activity=1.060, ref_date=datetime(2008, 1, 7), unit='uCi')
+CalSource("Y88", serial_num=190607000, activity=433, ref_date=datetime(2019, 7, 1), unit='kBq')
+CalSource("Na22", serial_num=129742, activity=1.146, ref_date=datetime(2008, 7, 1), unit='uCi')
+CalSource("Cs137", serial_num=129792, activity=92.11, ref_date=datetime(2008, 7, 1), unit='nCi')
+CalSource("Cd109", serial_num=129757, activity=10.40, ref_date=datetime(2008, 7, 1), unit='uCi')
+CalSource("Mn54", serial_num="J4-348", activity=9.882, ref_date=datetime(2012, 9, 1), unit='uCi')
+CalSource("Co57", serial_num="K4-895", activity=1.135, ref_date=datetime(2013, 7, 15), unit='uCi')
+CalSource("Co57", serial_num="K4-896", activity=11.11, ref_date=datetime(2013, 7, 15), unit='uCi')
+CalSource("Eu152", serial_num="129753", activity=1.060, ref_date=datetime(2008, 1, 7), unit='uCi')
 
 
 if __name__ == '__main__':
-    n = Nuclide.from_symbol("Y88")
+    n = Nuclide("Y88")
     print(n.decay_modes)
 
     for g in n.decay_gamma_lines:
         print(g)
     print(CalSource.get_source(190607000).get_n_decays(1, ))
-    Nuclide.from_symbol('Co59').decay_rate
+    Nuclide('Co59').decay_rate

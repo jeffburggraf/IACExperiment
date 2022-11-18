@@ -7,14 +7,15 @@ from matplotlib import pyplot as plt
 from JSB_tools import mpl_hist
 from pathlib import Path
 from analysis import Shot
-from JSB_tools import rebin, calc_background, Nuclide, shade_plot
+from JSB_tools import rebin, calc_background, shade_plot
+from JSB_tools.nuke_data_tools import Nuclide
 from JSB_tools.spe_reader import SPEFile
 from mpant_reader import MPA
 # =============================================
 max_shots = 4
 shot_kwargs = {'tube_len': None,  # 12.64, 9.44,  6.14, 4.16
                'foil_pos': 'upstream',  # 'center', 'upstream'
-               'flow': None,
+               'flow_pat': None,
                'he_flow': None,
                'ar_flow': None,
                'mylar': 0,
@@ -99,7 +100,7 @@ mpl_hist(erg_bins, y_iac, label="IAC", ax=ax1)
 mpl_hist(erg_bins, y_llnl, ax=ax1, label="LLNL")
 
 for (n_name, gi) in tests:
-    erg = Nuclide.from_symbol(n_name).decay_gamma_lines[gi].erg.n
+    erg = Nuclide(n_name).decay_gamma_lines[gi].erg.n
     emin = erg - e_window_width
     emax = erg + e_window_width
     i0 = np.searchsorted(erg_bins, emin)

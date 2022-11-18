@@ -33,7 +33,7 @@ num_time_bins = 130
 sub_bg = True
 load_from_pickle = True
 plot_integrated = True
-labels = ['He (SLPM)', 'Ar (SLPM)', 'Flow stop (s)', 'flow', 'Length (Chamber-Filter m)']
+labels = ['He (SLPM)', 'Ar (SLPM)', 'Flow stop (s)', 'flow_pat', 'Length (Chamber-Filter m)']
 # labels = None
 scale_Ln2 = 1.2*1.5
 #  ====================================================

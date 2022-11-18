@@ -71,7 +71,6 @@ CONFIG_ATTRIB = object
 
 class Shot:
     bad_shots = [6, 42, 43, 44, 82, 119, 123, 136, 140]
-    # equal_test_attribs = {'flow', 'mylar', }
 
     shape_cal = [0.4448941791251471, 0.000246982583338865, -1.538593499008935e-08]
 
@@ -119,7 +118,7 @@ class Shot:
         shot_metadata = ALL_SHOTS_METADATA[shot_num]
         self.load_erg_cal = load_erg_cal
 
-        self.flow = shot_metadata['flow'], CONFIG_ATTRIB
+        self.flow_pat = shot_metadata['flow_pat'], CONFIG_ATTRIB
         self.he_flow = shot_metadata['He (SLPM)'], CONFIG_ATTRIB
         self.ar_flow = shot_metadata['Ar (SLPM)'], CONFIG_ATTRIB
 
@@ -222,41 +221,48 @@ class Shot:
                     'mylar': [0, 2.5, 5, 10, 20],
                     'flow_stop': [0, 10, 20, 40],
                     'tube_len': [4.16, 6.14, 9.44, 12.64],
-                    'flow': ['100001', '111111', '010010', '111010'],
+                    'flow_pat': ['100001', '111111', '010010', '111010'],
                     'beam_duration': [3, 5, 20],
                     'num_filters': [2, 3, 4],
                     'llnl_filter_pos': [2, 1]}
 
     @staticmethod
-    def find_shots(good_shot_only=True, eval_func='1==1', flow=None, he_flow=None, ar_flow=None, tube_len=None,
+    def find_shots(good_shot_only=True, eval_func='1==1', flow_pat=None, he_flow=None, ar_flow=None, tube_len=None,
                    cold_filter=None, mylar=None, foil_pos=None, flow_stop=None, num_filters=None, beam_duration=None,
                    converter='W', llnl_filter_pos=1) -> List[Shot]:
         """
         None always means not to use as search criteria.
 
         Args:
-            good_shot_only: True means dont include "bad" shots.
+            good_shot_only: True means don't include "bad" shots.
 
             eval_func: string of python code to be evaluated with 'self' bound to current instance.
                 e.g.: self.he_flow + self.ar_flow >= 1.0
 
-            flow: Flow patter. Options: 010010 (default), 100001 (offset), 111111 (All in all out),
-                or 111010 (All in one out)
+            flow_pat: Flow patter. Options: 010010 (center in, center out), 100001 (offset), 111111 (All in, all out),
+                or 111010 (All in, one out)
 
-            he_flow: He flow in SLPM
-            ar_flow: Ar flow in SLPM
+            he_flow: He flow_pat in SLPM
+            ar_flow: Ar flow_pat in SLPM
 
             tube_len: None for any. Options are: 4.16, 6.14, 9.44, 12.64  (in meters)
                 Can be Tuple of len 1, e.g. (1,) to refer to length of the second tube length, as in, [4.16, 6.14, 9.44, 12.64][1]
 
             cold_filter: True or False
+
             mylar: 0 for no mylar. options are: 0, 2.5, 5, 7.5, 10, 20
+
             foil_pos: "1cm" for upstream. , "center" for center.
+
             flow_stop: 0 for no stopping of gas. Otherwise, number of seconds before stop.
+
             num_filters: Number of filters used.
-            beam_duration: Seconds beam was running. Usually 3.
+
+            beam_duration: Seconds beam was running. Almost always 3. Options are 3, 20
 
             converter: W for tungsten converter.
+
+            llnl_filter_pos: A value of 1 means LLNL filter if encountered first in the gas stream.
 
         Returns:
 
@@ -265,7 +271,7 @@ class Shot:
         if isinstance(tube_len, tuple) and len(tube_len) == 1 and type(tube_len[0]) == int:
             tube_len = [4.16, 6.14, 9.44, 12.64][tube_len[0]]
 
-        attribs = {'flow': flow, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
+        attribs = {'flow_pat': flow_pat, 'he_flow': he_flow, 'ar_flow': ar_flow, 'tube_len': tube_len,
                    'cold_filter': cold_filter, 'mylar': mylar, 'foil_pos': foil_pos, 'flow_stop': flow_stop,
                    'num_filters': num_filters, 'beam_duration': beam_duration, 'converter': converter,
                    'llnl_filter_pos': llnl_filter_pos}
@@ -390,7 +396,7 @@ class Shot:
         if attribs == 'all':
             attribs = ['shotnum'] + self.__config_attribs__ +  ['comment']
         elif attribs == 0:
-            attribs = ['shotnum', 'flow', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter', 'comment']
+            attribs = ['shotnum', 'flow_pat', 'he_flow', 'ar_flow', 'foil_pos', 'cold_filter', 'comment']
         else:
             if hasattr(attribs, '__iter__') and all(isinstance(x, str) for x in attribs):
                 pass
@@ -437,7 +443,7 @@ def __get_all_shots_data(load=False):
                   'Downstream Outlet']:
             flow += str(shot_metadata.pop(k))
 
-        shot_metadata['flow'] = flow
+        shot_metadata['flow_pat'] = flow
 
         run_num = shot_metadata.get('Run #', None)
         if run_num is None:  # end of data

@@ -3,19 +3,20 @@ from matplotlib import pyplot as plt
 from JSB_tools import mpl_hist
 from pathlib import Path
 import pickle
-from JSB_tools.nuke_data_tools import FissionYields, Nuclide
 from JSB_tools.MCNP_helper import OutP
 from pathlib import Path
 from uncertainties import unumpy as unp
 from uncertainties import ufloat
-from JSB_tools import DecayNuclide
+from JSB_tools.nuke_data_tools import Nuclide
+from JSB_tools.nuke_data_tools.nuclide.fission_yields import FissionYields
+from JSB_tools.nuke_data_tools.nuclide import DecayNuclide
 
 
 thresh_frac = 0.1
 outp = OutP(Path(__file__).parent.parent/'mcnp'/'sims'/'du_shot134'/'outp')
 tally = outp.get_f4_tally('Active down')
 
-xs = unp.nominal_values(Nuclide.from_symbol('U238').gamma_induced_fiss_xs.interp(tally.energies))
+xs = unp.nominal_values(Nuclide('U238').gamma_induced_fiss_xs(tally.energies))
 weights = xs*tally.nominal_fluxes
 weights /= sum(weights)
 
@@ -39,7 +40,7 @@ yields = {k: np.sum(v) for k, v in y.yields.items()}
 for n_name, yield_ in yields.items():
     print(f"Calculating {n_name}... {i} out of {entries}")
     i += 1
-    nuclide = Nuclide.from_symbol(n_name)
+    nuclide = Nuclide(n_name)
     if nuclide.is_stable or not (1 < nuclide.half_life.n < 15*60):
         continue
     func = DecayNuclide(n_name)
@@ -65,7 +66,7 @@ entries = len(rates_dict)
 for k, v in rates_dict.items():
     print(f"Summing {k}... {i} out of {entries}")
     i += 1
-    n = Nuclide.from_symbol(k)
+    n = Nuclide(k)
     result[k] = np.trapz(v, dx=dt)
     result[k] += remaining_dict[k]
     try:

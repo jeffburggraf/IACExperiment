@@ -8,7 +8,8 @@ from matplotlib import pyplot as plt
 from JSB_tools import mpl_hist, TabPlot
 from pathlib import Path
 from analysis import Shot, MaestroListFile
-from JSB_tools import Nuclide, convolve_gauss
+from JSB_tools import convolve_gauss
+from JSB_tools.nuke_data_tools import Nuclide
 from typing import Tuple
 from uncertainties import unumpy as unp
 from uncertainties import ufloat
@@ -31,7 +32,7 @@ flow_pat = "010010"  # only really works for 010010 due to lack of data
 
 max_shots = None  # Max number of shots to use for each pipe length
 
-he_flow = 0.25  # also will be Ar flow in L/min
+he_flow = 0.25  # also will be Ar flow_pat in L/min
 
 erg_window = 4  # window width in keV for calculating time dependence
 
@@ -41,7 +42,7 @@ time_dep_debug = False  # plot debug in list.get_time_dependence
 if nuclide == 'e+':
     nuclide = None
 else:
-    nuclide = Nuclide.from_symbol(nuclide)
+    nuclide = Nuclide(nuclide)
 
 if t_max is None:
     if nuclide is not None:
@@ -123,7 +124,7 @@ fig, inv_ax = plt.subplots()
 for tube_length in tube_lengths:
     print(tube_length)
     shots = []
-    for shot in Shot.find_shots(flow=flow_pat, eval_func="'cold' not in self.comment.lower()", flow_stop=0, num_filters=2,
+    for shot in Shot.find_shots(flow_pat=flow_pat, eval_func="'cold' not in self.comment.lower()", flow_stop=0, num_filters=2,
                                 llnl_filter_pos=1, tube_len=tube_length, cold_filter=False, mylar=0, beam_duration=3,
                                 foil_pos='upstream', he_flow=he_flow, ar_flow=he_flow):
         shots.append(shot)

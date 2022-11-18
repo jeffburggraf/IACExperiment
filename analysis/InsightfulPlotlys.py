@@ -8,7 +8,7 @@ from JSB_tools.maestro_reader import MaestroListFile
 
 time_bins = np.arange(0, 50, 2)
 
-attribs1 = {'flow': '100001',  'mylar': False,
+attribs1 = {'flow_pat': '100001',  'mylar': False,
             'foil_pos': 'upstream', 'flow_stop': None, 'num_filters': 2, 'beam_duration': 3}
 
 
@@ -76,7 +76,7 @@ def mylar_tests():
     Returns:
 
     """
-    # two shots for each My thickness and flow rate. Each shot is for different flow congif: 010010 or 100001
+    # two shots for each My thickness and flow_pat rate. Each shot is for different flow_pat congif: 010010 or 100001
     shots_25 = {0: [40, 122], 2.5: [103, 105], 5: [107, 108], 10: [111, 133, 114], 20: [116, 118]}  # 0.25 L/m
     shots_5 = {0: [38, 121], 2.5: [102, 104], 5: [106, 109], 10: [110, 112], 20: [115, 117]}  # 0.5 L/m
 
@@ -125,7 +125,7 @@ def fresh_filters(fresh_only=False):
 
 def all_fast_warm_shots(**plotly_kwargs):
     """
-    All warm filter shots with short tub and 0.5/0.5 Ar/He flow rate.
+    All warm filter shots with short tub and 0.5/0.5 Ar/He flow_pat rate.
     Returns:
 
     """
@@ -172,7 +172,7 @@ def inline_vs_offset(flow_rate=0.5, tube_len=4.16, max_shots=5, foil_pos='center
     n_offset = 0
 
     for shot in Shot.find_shots(tube_len=tube_len, cold_filter=False, mylar=0, flow_stop=0, beam_duration=3,
-                                num_filters=2, he_flow=flow_rate, ar_flow=flow_rate, flow='010010', foil_pos=foil_pos):
+                                num_filters=2, he_flow=flow_rate, ar_flow=flow_rate, flow_pat='010010', foil_pos=foil_pos):
         print('Inline:', shot)
         if n_inline > max_shots:
             break
@@ -185,7 +185,7 @@ def inline_vs_offset(flow_rate=0.5, tube_len=4.16, max_shots=5, foil_pos='center
         # inline_list += shot.list
 
     for shot in Shot.find_shots(tube_len=tube_len, cold_filter=False, mylar=0, flow_stop=0, beam_duration=3,
-                                num_filters=2, he_flow=flow_rate, ar_flow=flow_rate, flow='100001', foil_pos=foil_pos):
+                                num_filters=2, he_flow=flow_rate, ar_flow=flow_rate, flow_pat='100001', foil_pos=foil_pos):
         print('Offset:', shot)
         n_offset += 1
         if offset_list is None:
@@ -201,7 +201,7 @@ def inline_vs_offset(flow_rate=0.5, tube_len=4.16, max_shots=5, foil_pos='center
                                  scales=[1.0/n_offset, 1.0/n_inline],
                                  remove_baseline=baseline_subtract)
 
-# Todo: flow pattern
+# Todo: flow_pat pattern
 
 inline_vs_offset()
 # cold_v_warm()

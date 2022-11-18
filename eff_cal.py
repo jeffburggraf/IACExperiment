@@ -4,6 +4,7 @@ Fit can be pickled for later use.
 
 """
 from __future__ import annotations
+from JSB_tools.nuke_data_tools import Nuclide
 from matplotlib import pyplot as plt
 import pickle
 from JSB_tools.regression import LogPolyFit
@@ -58,9 +59,9 @@ if __name__ == '__main__':
         n_parent = n
         # add special cases of daughter decays here.
         if n.name == 'Cd109':  # gamma comes from daughter nucleus
-            n = Nuclide.from_symbol("Ag109_m1")
+            n = Nuclide("Ag109_m1")
         elif n.name == 'Cs137':  # gamma comes from daughter nucleus
-            n = Nuclide.from_symbol("Ba137_m1")
+            n = Nuclide("Ba137_m1")
         else:
             n = n
 
@@ -85,8 +86,7 @@ if __name__ == '__main__':
         out.all_gammas = n.decay_gamma_lines[:]
         return out
 
-    from JSB_tools import Nuclide
-    for g in Nuclide.from_symbol('Eu152').decay_gamma_lines:
+    for g in Nuclide('Eu152').decay_gamma_lines:
         print(g)
 
     def exclude_src_function(s):

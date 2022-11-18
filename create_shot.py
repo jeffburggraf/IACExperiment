@@ -41,8 +41,8 @@ class IACShot:
 
     @classmethod
     def gen_fake_data(cls):
-        from JSB_tools import Nuclide
-        xe = Nuclide.from_symbol('Xe139')
+        from JSB_tools.nuke_data_tools import Nuclide
+        xe = Nuclide('Xe139')
 
         mean_transport_time = 10
         sigma_transport_time = 4
